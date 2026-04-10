@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar Sesión | Control-Ventas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-logo">📊</div>
+        <h2>Control-Ventas</h2>
+        <p>Accede a tu panel de negocio</p>
+      </div>
+
+      <!-- Tabs Login / Registro -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="showAuthTab('login')">Iniciar Sesión</button>
+        <button class="auth-tab" onclick="showAuthTab('register')">Registrarse</button>
+      </div>
+
+      <!-- Formulario Login -->
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label>Correo electrónico</label>
+          <input type="email" id="loginEmail" placeholder="tu@correo.com" required>
+        </div>
+        <div class="form-group">
+          <label>Contraseña</label>
+          <input type="password" id="loginPassword" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-round btn-lg" id="loginBtn">
+          Iniciar Sesión
+        </button>
+        <div style="text-align:center;margin:16px 0;color:var(--gray);font-size:0.85rem;">— o —</div>
+        <button type="button" class="btn btn-block btn-round btn-lg btn-google" onclick="handleGoogleLogin()">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:20px;height:20px;"> Continuar con Google
+        </button>
+      </form>
+
+      <!-- Formulario Registro (email/contraseña) -->
+      <form id="registerForm" class="hidden" onsubmit="handleRegister(event)">
+        <div class="form-group">
+          <label>Nombre completo *</label>
+          <input type="text" id="regName" placeholder="Tu nombre" required>
+        </div>
+        <div class="form-group">
+          <label>Nombre del negocio *</label>
+          <input type="text" id="regBusiness" placeholder="Mi Tienda" required>
+        </div>
+        <div class="form-group">
+          <label>Teléfono (opcional)</label>
+          <div style="display:flex;gap:8px;">
+            <select id="regCountryCode" style="width:140px;flex-shrink:0;"></select>
+            <input type="tel" id="regPhone" placeholder="73265343" style="flex:1;">
+          </div>
+          <small style="color:var(--gray);font-size:0.75rem;">Puedes dejarlo vacío si prefieres</small>
+        </div>
+        <div class="form-group">
+          <label>Correo electrónico *</label>
+          <input type="email" id="regEmail" placeholder="tu@correo.com" required>
+        </div>
+        <div class="form-group">
+          <label>Contraseña *</label>
+          <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres" required minlength="6">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-round btn-lg" id="regBtn">
+          Crear Cuenta
+        </button>
+        <div style="text-align:center;margin:16px 0;color:var(--gray);font-size:0.85rem;">— o registrarse con —</div>
+        <button type="button" class="btn btn-block btn-round btn-lg btn-google" onclick="handleGoogleRegister()">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:20px;height:20px;"> Registrarse con Google
+        </button>
+      </form>
+
+      <!-- Formulario post-Google (solo nombre, tienda, teléfono) -->
+      <form id="googleRegForm" class="hidden" onsubmit="completeGoogleRegister(event)">
+        <div style="text-align:center;margin-bottom:20px;">
+          <div style="font-size:2rem;margin-bottom:8px;">🎉</div>
+          <h3 style="font-size:1.1rem;font-weight:700;">¡Casi listo!</h3>
+          <p style="font-size:0.85rem;color:var(--gray);">Entraste con: <strong id="googleEmailDisplay"></strong></p>
+        </div>
+        <div class="form-group">
+          <label>Tu nombre completo *</label>
+          <input type="text" id="googleRegName" placeholder="Tu nombre" required>
+        </div>
+        <div class="form-group">
+          <label>Nombre de tu tienda/negocio *</label>
+          <input type="text" id="googleRegBusiness" placeholder="Mi Tienda" required>
+        </div>
+        <div class="form-group">
+          <label>Teléfono (opcional)</label>
+          <div style="display:flex;gap:8px;">
+            <select id="googleRegCountryCode" style="width:140px;flex-shrink:0;"></select>
+            <input type="tel" id="googleRegPhone" placeholder="73265343" style="flex:1;">
+          </div>
+          <small style="color:var(--gray);font-size:0.75rem;">Puedes dejarlo vacío si prefieres</small>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-round btn-lg" id="googleRegBtn">
+          Crear Cuenta
+        </button>
+      </form>
+
+      <!-- Código de activación -->
+      <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--light);">
+        <p style="text-align:center;font-size:0.85rem;color:var(--gray);margin-bottom:10px;">¿Tienes un código de activación?</p>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="activationCode" placeholder="CÓDIGO DE 8 CARACTERES" maxlength="8" style="text-transform:uppercase;letter-spacing:2px;text-align:center;font-weight:700;">
+          <button class="btn btn-secondary btn-sm" onclick="activateCode()" id="activateBtn">Activar</button>
+        </div>
+      </div>
+
+      <div class="auth-footer">
+        <a href="index.html">← Volver al inicio</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- WhatsApp flotante -->
+  <a href="https://wa.me/59173265343?text=Hola%2C%20necesito%20ayuda%20con%20Control-Ventas" class="whatsapp-float" target="_blank" title="Contáctanos por WhatsApp">
+    <svg viewBox="0 0 32 32" width="32" height="32" fill="white"><path d="M16 0C7.163 0 0 7.163 0 16c0 2.837.736 5.593 2.138 8.032L.073 31.927l8.169-2.042A15.93 15.93 0 0016 32c8.837 0 16-7.163 16-16S24.837 0 16 0zm8.082 22.617c-.34.954-1.996 1.826-2.75 1.943-.712.11-1.617.157-2.608-.163a23.91 23.91 0 01-2.36-.873c-4.15-1.792-6.867-5.99-7.077-6.27-.21-.28-1.72-2.289-1.72-4.367 0-2.078 1.088-3.102 1.474-3.524.387-.422.844-.528 1.126-.528.282 0 .563.003.81.015.26.013.607-.098.95.724.34.823 1.16 2.838 1.264 3.043.105.205.175.445.035.718-.14.273-.21.443-.42.683-.21.24-.44.536-.63.72-.21.204-.428.426-.184.836.244.41 1.085 1.79 2.33 2.9 1.598 1.424 2.945 1.866 3.364 2.076.42.21.665.176.91-.106.244-.282 1.05-1.226 1.33-1.648.28-.422.56-.352.94-.21.382.14 2.417 1.14 2.83 1.348.414.21.69.315.79.49.105.175.105 1.012-.234 1.988z"/></svg>
+  </a>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>

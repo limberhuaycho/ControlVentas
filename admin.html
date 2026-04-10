@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel | Control-Ventas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <!-- Loading -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <p style="color:var(--gray);">Verificando acceso...</p>
+  </div>
+
+  <!-- Admin Login (se muestra si no está logueado como admin) -->
+  <div class="auth-page" id="adminLoginSection">
+    <div class="auth-card" style="max-width:400px;">
+      <div class="auth-header">
+        <div class="auth-logo" style="background:var(--gradient-3);">🔐</div>
+        <h2>Panel Admin</h2>
+        <p>Acceso exclusivo para administradores</p>
+      </div>
+      <button type="button" class="btn btn-block btn-round btn-lg btn-google" onclick="handleAdminGoogleLogin()" id="adminGoogleBtn">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:20px;height:20px;"> Ingresar con Google
+      </button>
+      <p style="text-align:center;margin-top:16px;font-size:0.8rem;color:var(--gray);">Solo usuarios autorizados en Firestore pueden acceder.</p>
+      <div class="auth-footer" style="margin-top:20px;">
+        <a href="index.html">← Volver al inicio</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Panel (oculto hasta verificar) -->
+  <div id="adminPanelSection" class="hidden">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo" style="background:var(--gradient-3);">🔐</div>
+        <div><div class="sidebar-title">Admin Panel</div><div class="sidebar-subtitle">Control-Ventas</div></div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Admin</div>
+          <div class="nav-item active" onclick="showAdminSection('dashboard')"><span class="nav-icon">📊</span> Dashboard</div>
+          <div class="nav-item" onclick="showAdminSection('usuarios')"><span class="nav-icon">👥</span> Usuarios</div>
+          <div class="nav-item" onclick="showAdminSection('planes')"><span class="nav-icon">💳</span> Planes</div>
+          <div class="nav-item" onclick="showAdminSection('codigos')"><span class="nav-icon">🔑</span> Códigos</div>
+          <div class="nav-item" onclick="showAdminSection('estadisticas')"><span class="nav-icon">📈</span> Estadísticas</div>
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-profile" onclick="adminLogout()">
+          <div class="profile-avatar" style="background:var(--gradient-3);" id="adminAvatar">A</div>
+          <div><div class="profile-name" id="adminName">Administrador</div><div class="profile-role">Cerrar Sesión</div></div>
+        </div>
+      </div>
+    </aside>
+    <main class="main-content">
+      <div class="top-bar">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <button class="btn-icon" onclick="document.getElementById('sidebar').classList.toggle('mobile-open')" style="background:var(--light-2);border:none;border-radius:10px;width:40px;height:40px;font-size:1.2rem;">☰</button>
+          <span style="font-weight:700;">🔐 Panel de Administración</span>
+        </div>
+        <div></div>
+      </div>
+
+      <!-- Admin Dashboard -->
+      <div class="page-content" id="admin-dashboard">
+        <h1 class="page-title">📊 Dashboard Global</h1>
+        <p class="page-subtitle">Resumen del sistema</p>
+        <div class="admin-stat-grid" id="adminStats">
+          <div class="stat-card"><div class="stat-icon purple">👥</div><div class="stat-info"><h3>Total Usuarios</h3><div class="stat-value" id="adminTotalUsers">0</div></div></div>
+          <div class="stat-card"><div class="stat-icon green">✅</div><div class="stat-info"><h3>Activos</h3><div class="stat-value" id="adminActiveUsers">0</div></div></div>
+          <div class="stat-card"><div class="stat-icon blue">🔑</div><div class="stat-info"><h3>Códigos Disponibles</h3><div class="stat-value" id="adminAvailCodes">0</div></div></div>
+          <div class="stat-card"><div class="stat-icon pink">💰</div><div class="stat-info"><h3>Ventas Globales</h3><div class="stat-value" id="adminTotalSales">$0</div></div></div>
+        </div>
+      </div>
+
+      <!-- Usuarios -->
+      <div class="page-content hidden" id="admin-usuarios">
+        <h1 class="page-title">👥 Gestión de Usuarios</h1>
+        <div class="table-container mt-3">
+          <div style="overflow-x:auto;">
+            <table><thead><tr><th>Nombre</th><th>Email</th><th>Negocio</th><th>Plan</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="adminUsersTable"><tr><td colspan="6" class="text-center text-gray" style="padding:40px;">Cargando...</td></tr></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Planes -->
+      <div class="page-content hidden" id="admin-planes">
+        <h1 class="page-title">💳 Configuración de Planes</h1>
+        <p class="page-subtitle">Modifica precios, límites y permisos de cada plan</p>
+        <div id="planesEditor"></div>
+        <button class="btn btn-primary btn-round mt-3" onclick="addNewPlan()">+ Agregar Nuevo Plan</button>
+      </div>
+
+      <!-- Códigos -->
+      <div class="page-content hidden" id="admin-codigos">
+        <h1 class="page-title">🔑 Códigos de Activación</h1>
+        <div class="card mb-3">
+          <h3 style="margin-bottom:16px;">Generar Nuevo Código</h3>
+          <div class="form-row">
+            <div class="form-group"><label>Plan</label><select id="codeGenPlan"><option value="mensual">Mensual</option><option value="premium">Premium</option><option value="mantenimiento">Mantenimiento</option></select></div>
+            <div class="form-group"><label>&nbsp;</label><button class="btn btn-primary btn-block" onclick="generateCode()">Generar Código</button></div>
+          </div>
+          <div id="generatedCode" class="hidden mt-2"><p style="margin-bottom:8px;font-weight:600;">Código generado:</p><div class="code-display" id="codeDisplay"></div></div>
+        </div>
+        <div class="table-container">
+          <div style="overflow-x:auto;">
+            <table><thead><tr><th>Código</th><th>Plan</th><th>Estado</th><th>Usado Por</th><th>Fecha</th></tr></thead>
+            <tbody id="codesTable"><tr><td colspan="5" class="text-center text-gray" style="padding:40px;">Sin códigos</td></tr></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estadísticas -->
+      <div class="page-content hidden" id="admin-estadisticas">
+        <h1 class="page-title">📈 Estadísticas Globales</h1>
+        <div id="globalStatsContent"><p class="text-gray">Cargando estadísticas...</p></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- WhatsApp flotante -->
+  <a href="https://wa.me/59173265343?text=Hola%2C%20soy%20el%20administrador%20de%20Control-Ventas" class="whatsapp-float" target="_blank" title="WhatsApp">
+    <svg viewBox="0 0 32 32" width="32" height="32" fill="white"><path d="M16 0C7.163 0 0 7.163 0 16c0 2.837.736 5.593 2.138 8.032L.073 31.927l8.169-2.042A15.93 15.93 0 0016 32c8.837 0 16-7.163 16-16S24.837 0 16 0zm8.082 22.617c-.34.954-1.996 1.826-2.75 1.943-.712.11-1.617.157-2.608-.163a23.91 23.91 0 01-2.36-.873c-4.15-1.792-6.867-5.99-7.077-6.27-.21-.28-1.72-2.289-1.72-4.367 0-2.078 1.088-3.102 1.474-3.524.387-.422.844-.528 1.126-.528.282 0 .563.003.81.015.26.013.607-.098.95.724.34.823 1.16 2.838 1.264 3.043.105.205.175.445.035.718-.14.273-.21.443-.42.683-.21.24-.44.536-.63.72-.21.204-.428.426-.184.836.244.41 1.085 1.79 2.33 2.9 1.598 1.424 2.945 1.866 3.364 2.076.42.21.665.176.91-.106.244-.282 1.05-1.226 1.33-1.648.28-.422.56-.352.94-.21.382.14 2.417 1.14 2.83 1.348.414.21.69.315.79.49.105.175.105 1.012-.234 1.988z"/></svg>
+  </a>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

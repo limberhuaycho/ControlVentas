@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Control-Ventas: Sistema SaaS para gestión de ventas, inventario, clientes y reportes en la nube.">
+  <title>Control-Ventas | Sistema de Gestión de Ventas en la Nube</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <nav class="navbar" id="navbar">
+    <a href="#" class="navbar-brand">
+      <div class="logo-icon">📊</div>
+      Control-Ventas
+    </a>
+    <div class="navbar-menu" id="navMenu">
+      <a href="#features">Características</a>
+      <a href="#pricing">Planes</a>
+      <a href="#benefits">Beneficios</a>
+      <a href="#contact">Contacto</a>
+    </div>
+    <div class="navbar-actions">
+      <a href="login.html" class="btn btn-primary btn-round">Iniciar Sesión</a>
+      <a href="admin.html" class="btn btn-outline btn-round btn-sm" style="border-color:var(--accent);color:var(--accent);">🔐 Admin</a>
+      <div class="hamburger" id="hamburger" onclick="toggleMenu()">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero" id="hero">
+    <div class="hero-particles">
+      <div class="particle" style="width:6px;height:6px;background:rgba(108,92,231,0.3);top:20%;left:10%;animation-delay:0s;"></div>
+      <div class="particle" style="width:8px;height:8px;background:rgba(0,206,201,0.3);top:60%;left:80%;animation-delay:2s;"></div>
+      <div class="particle" style="width:5px;height:5px;background:rgba(253,121,168,0.3);top:80%;left:30%;animation-delay:4s;"></div>
+      <div class="particle" style="width:7px;height:7px;background:rgba(116,185,255,0.3);top:30%;left:70%;animation-delay:1s;"></div>
+      <div class="particle" style="width:4px;height:4px;background:rgba(108,92,231,0.4);top:50%;left:50%;animation-delay:3s;"></div>
+    </div>
+    <div class="hero-content">
+      <div class="hero-badge">🚀 La mejor herramienta para tu negocio</div>
+      <h1>Gestiona tu negocio con <span>Control-Ventas</span></h1>
+      <p>Sistema completo en la nube para registrar ventas, controlar inventario, gestionar clientes y obtener reportes avanzados. Todo desde cualquier dispositivo.</p>
+      <div class="hero-buttons">
+        <a href="login.html" class="btn btn-primary btn-lg btn-round">Comenzar Gratis</a>
+        <a href="#features" class="btn btn-outline btn-lg btn-round" style="border-color:rgba(255,255,255,0.3);color:var(--white);">Ver Características</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="features-section" id="features">
+    <div class="section-header">
+      <span class="badge">Características</span>
+      <h2>Todo lo que necesitas para tu negocio</h2>
+      <p>Herramientas poderosas diseñadas para simplificar la gestión de tu negocio</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card card-3d">
+        <div class="feature-icon" style="background:rgba(0,184,148,0.12);color:var(--success);">🛒</div>
+        <h3>Registro de Ventas</h3>
+        <p>Registra cada venta de forma rápida y automática. Calcula ganancias al instante.</p>
+      </div>
+      <div class="feature-card card-3d">
+        <div class="feature-icon" style="background:rgba(108,92,231,0.12);color:var(--primary);">📦</div>
+        <h3>Control de Inventario</h3>
+        <p>Monitorea tu stock en tiempo real. Recibe alertas cuando un producto esté por agotarse.</p>
+      </div>
+      <div class="feature-card card-3d">
+        <div class="feature-icon" style="background:rgba(253,121,168,0.12);color:var(--accent);">📈</div>
+        <h3>Reportes Avanzados</h3>
+        <p>Gráficas detalladas de ventas, ganancias y rendimiento del negocio.</p>
+      </div>
+      <div class="feature-card card-3d">
+        <div class="feature-icon" style="background:rgba(116,185,255,0.12);color:var(--info);">👥</div>
+        <h3>Gestión de Clientes</h3>
+        <p>CRM integrado con historial de compras, segmentación y datos de contacto.</p>
+      </div>
+      <div class="feature-card card-3d">
+        <div class="feature-icon" style="background:rgba(253,203,110,0.2);color:#e17055;">📄</div>
+        <h3>Extractos PDF</h3>
+        <p>Genera extractos y reportes descargables en PDF con los datos de tu negocio.</p>
+      </div>
+      <div class="feature-card card-3d">
+        <div class="feature-icon" style="background:rgba(0,206,201,0.12);color:var(--secondary);">📣</div>
+        <h3>Marketing y Descuentos</h3>
+        <p>Crea promociones, descuentos y campañas para impulsar tus ventas.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="features-section" id="benefits" style="background:var(--light-2);">
+    <div class="section-header">
+      <span class="badge">Beneficios</span>
+      <h2>¿Por qué elegir Control-Ventas?</h2>
+      <p>Diseñado para emprendedores y negocios que quieren crecer</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(108,92,231,0.12);color:var(--primary);">⚡</div>
+        <h3>Rápido y Fácil</h3>
+        <p>Interfaz intuitiva que no requiere conocimientos técnicos. Empieza en minutos.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(0,184,148,0.12);color:var(--success);">🔒</div>
+        <h3>Datos Seguros</h3>
+        <p>Cada negocio tiene su propia base de datos privada. Tus datos son solo tuyos.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(253,121,168,0.12);color:var(--accent);">📱</div>
+        <h3>Multiplataforma</h3>
+        <p>Funciona en celular, tablet y computadora. Siempre disponible.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="pricing-section" id="pricing">
+    <div class="section-header">
+      <span class="badge">Precios</span>
+      <h2>Elige el plan perfecto para ti</h2>
+      <p>Comienza gratis y escala cuando lo necesites. Paga con código de activación.</p>
+    </div>
+    <div class="pricing-grid" id="pricingGrid">
+      <div class="pricing-card">
+        <div class="plan-name">Gratuito</div>
+        <div class="plan-price">$0</div>
+        <div class="plan-period">Para siempre</div>
+        <ul class="plan-features">
+          <li>Hasta 50 productos</li>
+          <li>Ventas básicas</li>
+          <li>1 extracto PDF/día</li>
+          <li>Soporte por email</li>
+          <li class="disabled">Reportes avanzados</li>
+          <li class="disabled">Videos y modelos 3D</li>
+        </ul>
+        <a href="login.html" class="btn btn-outline btn-block btn-round">Comenzar Gratis</a>
+        <!--<a href="https://wa.me/59173265343?text=Hola%2C%20quiero%20información%20sobre%20el%20plan%20Gratuito%20de%20Control-Ventas.%20Precio%3A%20%240%20-%20Para%20siempre." class="btn btn-sm btn-block mt-2" style="background:var(--success);color:white;">📱 Consultar por WhatsApp</a> -->
+      </div>
+      <div class="pricing-card popular">
+        <div class="plan-name">Mensual</div>
+        <div class="plan-price">$50</div>
+        <div class="plan-period">por mes</div>
+        <ul class="plan-features">
+          <li>Productos ilimitados</li>
+          <li>Reportes avanzados</li>
+          <li>5 extractos PDF/día</li>
+          <li>CRM completo</li>
+          <li>Imágenes y Videos</li>
+          <li>Firebase Storage</li>
+        </ul>
+        <a href="https://wa.me/59173265343?text=Hola%2C%20quiero%20adquirir%20el%20plan%20Mensual%20de%20Control-Ventas.%20Precio%3A%20%2450%2Fmes.%20Productos%20ilimitados%2C%20reportes%20avanzados%2C%205%20extractos%20PDF%2Fd%C3%ADa%2C%20CRM%20completo.%20%C2%BFC%C3%B3mo%20obtengo%20mi%20c%C3%B3digo%20de%20activaci%C3%B3n%3F" class="btn btn-primary btn-block btn-round" target="_blank">Quiero este Plan</a>
+      </div>
+      <div class="pricing-card">
+        <div class="plan-name">Premium</div>
+        <div class="plan-price">$100</div>
+        <div class="plan-period">por mes</div>
+        <ul class="plan-features">
+          <li>Todo ilimitado</li>
+          <li>10 extractos PDF/día</li>
+          <li>Soporte 24/7</li>
+          <li>Imágenes, Videos y 3D</li>
+          <li>Marketing avanzado</li>
+          <li>Personalización completa</li>
+        </ul>
+        <a href="https://wa.me/59173265343?text=Hola%2C%20quiero%20adquirir%20el%20plan%20Premium%20de%20Control-Ventas.%20Precio%3A%20%24100%2Fmes.%20Todo%20ilimitado%2C%2010%20extractos%20PDF%2Fd%C3%ADa%2C%20soporte%2024%2F7%2C%20modelos%203D.%20%C2%BFC%C3%B3mo%20obtengo%20mi%20c%C3%B3digo%3F" class="btn btn-accent btn-block btn-round" target="_blank">Quiero Premium</a>
+      </div>
+      <div class="pricing-card">
+        <div class="plan-name">Mantenimiento</div>
+        <div class="plan-price">$270</div>
+        <div class="plan-period">pago único</div>
+        <ul class="plan-features">
+          <li>Todo de Premium</li>
+          <li>Extractos PDF ilimitados</li>
+          <li>Soporte técnico dedicado</li>
+          <li>Personalización total</li>
+          <li>Capacitación incluida</li>
+          <li>Actualizaciones prioritarias</li>
+        </ul>
+        <a href="https://wa.me/59173265343?text=Hola%2C%20quiero%20adquirir%20el%20plan%20Mantenimiento%20de%20Control-Ventas.%20Precio%3A%20%24270%20pago%20%C3%BAnico.%20Todo%20ilimitado%2C%20soporte%20dedicado%2C%20personalizaci%C3%B3n%20total.%20%C2%BFC%C3%B3mo%20obtengo%20mi%20c%C3%B3digo%3F" class="btn btn-secondary btn-block btn-round" target="_blank">Contactar</a>
+      </div>
+    </div>
+  </section>
+
+  <footer style="background:var(--dark-3);color:var(--gray-light);padding:60px 20px 30px;text-align:center;" id="contact">
+    <div class="container">
+      <div style="font-size:1.5rem;font-weight:800;color:var(--white);margin-bottom:8px;">📊 Control-Ventas</div>
+      <p style="margin-bottom:16px;">Sistema de gestión de ventas en la nube</p>
+      <a href="https://wa.me/59173265343?text=Hola%2C%20tengo%20una%20consulta%20sobre%20Control-Ventas" class="btn btn-round" style="background:var(--success);color:white;margin-bottom:20px;" target="_blank">📱 Contáctanos por WhatsApp: +591 73265343</a>
+      <p style="font-size:0.85rem;color:var(--gray);">© 2026 Control-Ventas. Todos los derechos reservados.</p>
+    </div>
+  </footer>
+
+  <!-- WhatsApp flotante -->
+  <a href="https://wa.me/59173265343?text=Hola%2C%20necesito%20ayuda%20con%20Control-Ventas" class="whatsapp-float" target="_blank" title="Contáctanos por WhatsApp">
+    <svg viewBox="0 0 32 32" width="32" height="32" fill="white"><path d="M16 0C7.163 0 0 7.163 0 16c0 2.837.736 5.593 2.138 8.032L.073 31.927l8.169-2.042A15.93 15.93 0 0016 32c8.837 0 16-7.163 16-16S24.837 0 16 0zm8.082 22.617c-.34.954-1.996 1.826-2.75 1.943-.712.11-1.617.157-2.608-.163a23.91 23.91 0 01-2.36-.873c-4.15-1.792-6.867-5.99-7.077-6.27-.21-.28-1.72-2.289-1.72-4.367 0-2.078 1.088-3.102 1.474-3.524.387-.422.844-.528 1.126-.528.282 0 .563.003.81.015.26.013.607-.098.95.724.34.823 1.16 2.838 1.264 3.043.105.205.175.445.035.718-.14.273-.21.443-.42.683-.21.24-.44.536-.63.72-.21.204-.428.426-.184.836.244.41 1.085 1.79 2.33 2.9 1.598 1.424 2.945 1.866 3.364 2.076.42.21.665.176.91-.106.244-.282 1.05-1.226 1.33-1.648.28-.422.56-.352.94-.21.382.14 2.417 1.14 2.83 1.348.414.21.69.315.79.49.105.175.105 1.012-.234 1.988z"/></svg>
+  </a>
+
+  <script>
+    function toggleMenu() {
+      document.getElementById('navMenu').classList.toggle('open');
+    }
+    window.addEventListener('scroll', () => {
+      const nav = document.getElementById('navbar');
+      if (window.scrollY > 50) nav.classList.add('scrolled');
+      else nav.classList.remove('scrolled');
+    });
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate-fadeInUp');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.feature-card, .pricing-card').forEach(el => {
+      el.style.opacity = '0';
+      observer.observe(el);
+    });
+  </script>
+</body>
+</html>

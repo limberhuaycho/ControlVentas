@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Control | Control-Ventas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <!-- Loading -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <p style="color:var(--gray);font-weight:500;">Cargando tu negocio...</p>
+  </div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">📊</div>
+      <div>
+        <div class="sidebar-title">Control-Ventas</div>
+        <div class="sidebar-subtitle" id="sidebarPlan">Plan Gratuito</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-title">Principal</div>
+        <div class="nav-item active" onclick="showSection('dashboard')">
+          <span class="nav-icon">🏠</span> Dashboard
+        </div>
+        <div class="nav-item" onclick="showSection('ventas')">
+          <span class="nav-icon">💰</span> Ventas
+        </div>
+        <div class="nav-item" onclick="showSection('productos')">
+          <span class="nav-icon">🛒</span> Productos
+        </div>
+        <div class="nav-item" onclick="showSection('inventario')">
+          <span class="nav-icon">📦</span> Inventario
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-title">Gestión</div>
+        <div class="nav-item" onclick="showSection('clientes')">
+          <span class="nav-icon">👥</span> Clientes
+        </div>
+        <div class="nav-item" onclick="showSection('reportes')">
+          <span class="nav-icon">📈</span> Reportes
+        </div>
+        <div class="nav-item" onclick="showSection('marketing')">
+          <span class="nav-icon">📣</span> Marketing
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-title">Herramientas</div>
+        <div class="nav-item" onclick="showExtractoModal()">
+          <span class="nav-icon">📄</span> Generar Extracto
+        </div>
+        <div class="nav-item" onclick="showSection('notificaciones')">
+          <span class="nav-icon">🔔</span> Notificaciones
+          <span class="nav-badge" id="notifBadge" style="display:none;">0</span>
+        </div>
+        <div class="nav-item" onclick="showSection('configuracion')">
+          <span class="nav-icon">⚙️</span> Configuración
+        </div>
+        <div class="nav-item" onclick="showPlanModal()">
+          <span class="nav-icon">💳</span> Mi Plan
+        </div>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-profile" onclick="handleLogout()">
+        <div class="profile-avatar" id="profileAvatar">?</div>
+        <div>
+          <div class="profile-name" id="profileName">Usuario</div>
+          <div class="profile-role">Cerrar Sesión</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content" id="mainContent">
+    <div class="top-bar">
+      <div style="display:flex;align-items:center;gap:16px;">
+        <button class="btn-icon" onclick="toggleSidebar()" style="background:var(--light-2);border:none;border-radius:10px;width:40px;height:40px;font-size:1.2rem;">☰</button>
+        <div class="breadcrumb">
+          Inicio &gt; <span id="currentSection">Dashboard</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;background:var(--light-2);border-radius:10px;padding:8px 16px;gap:8px;">
+        🔍 <input type="text" placeholder="Buscar..." style="border:none;background:transparent;padding:4px;" id="globalSearch" onkeyup="handleSearch(this.value)">
+      </div>
+      <div class="top-bar-actions">
+        <button class="action-btn" onclick="showSection('notificaciones')" title="Notificaciones">
+          🔔<span class="badge-dot" id="notifDot" style="display:none;"></span>
+        </button>
+        <button class="action-btn" onclick="toggleFullscreen()" title="Pantalla completa">⛶</button>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="page-content" id="section-dashboard">
+      <h1 class="page-title" id="greetingTitle">Buenos días 👋</h1>
+      <p class="page-subtitle">Resumen de tu negocio hoy</p>
+
+      <div class="grid-4 grid" style="gap:20px;margin-bottom:24px;" id="statsGrid">
+        <div class="stat-card">
+          <div class="stat-icon green">💰</div>
+          <div class="stat-info"><h3>Ventas del Día</h3><div class="stat-value" id="ventasDia">$0</div><div class="stat-change positive" id="ventasDiaChange">↗ +0%</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon purple">📊</div>
+          <div class="stat-info"><h3>Ingresos Mensuales</h3><div class="stat-value" id="ingresosMes">$0</div><div class="stat-change positive" id="ingresosMesChange">↗ +0%</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon pink">📉</div>
+          <div class="stat-info"><h3>Gastos</h3><div class="stat-value" id="gastosMes">$0</div><div class="stat-change negative" id="gastosMesChange">↘ -0%</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon blue">💎</div>
+          <div class="stat-info"><h3>Ganancia Neta</h3><div class="stat-value" id="gananciaNeta">$0</div><div class="stat-change positive" id="gananciaChange">↗ +0%</div></div>
+        </div>
+      </div>
+
+      <div id="stockAlerts" class="hidden" style="margin-bottom:24px;">
+        <div class="card" style="border-left:4px solid var(--danger);">
+          <h3 style="color:var(--danger);margin-bottom:12px;">⚠️ Alertas de Stock Bajo</h3>
+          <div id="stockAlertsList"></div>
+        </div>
+      </div>
+
+      <div class="grid-2 grid" style="gap:24px;">
+        <div class="chart-container">
+          <div class="chart-header">
+            <div><div class="chart-title">Resumen de Ventas</div><div class="chart-subtitle">Ingresos y ganancias mensuales</div></div>
+            <select id="chartPeriod" onchange="updateCharts()" style="padding:6px 12px;border-radius:8px;border:1px solid var(--light);font-size:0.85rem;">
+              <option value="7">Última semana</option><option value="30" selected>Último mes</option><option value="90">Últimos 3 meses</option>
+            </select>
+          </div>
+          <canvas id="salesChart" class="chart-canvas"></canvas>
+        </div>
+        <div class="chart-container">
+          <div class="chart-header"><div><div class="chart-title">Productos más Vendidos</div><div class="chart-subtitle">Top 5 productos</div></div></div>
+          <canvas id="productsChart" class="chart-canvas"></canvas>
+        </div>
+      </div>
+
+      <div class="card mt-4" id="planUsageCard">
+        <h3 style="margin-bottom:16px;">📊 Uso de tu Plan</h3>
+        <div id="planUsageContent"></div>
+      </div>
+    </div>
+
+    <!-- VENTAS -->
+    <div class="page-content hidden" id="section-ventas">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
+        <div><h1 class="page-title">💰 Ventas</h1><p class="page-subtitle">Registra y gestiona tus ventas</p></div>
+        <button class="btn btn-primary btn-round" onclick="openSaleModal()">+ Nueva Venta</button>
+      </div>
+      <div class="card mb-3" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+        <input type="date" id="filterDateFrom" style="width:auto;"><span style="color:var(--gray);">a</span>
+        <input type="date" id="filterDateTo" style="width:auto;">
+        <input type="text" id="filterClient" placeholder="Filtrar por cliente..." style="width:200px;">
+        <button class="btn btn-sm btn-outline" onclick="filterSales()">Filtrar</button>
+        <button class="btn btn-sm" style="background:var(--light);color:var(--dark);" onclick="clearFilters()">Limpiar</button>
+      </div>
+      <div class="table-container">
+        <div class="table-header"><h3>Historial de Ventas</h3><span class="text-gray" id="salesCount">0 ventas</span></div>
+        <div style="overflow-x:auto;">
+          <table><thead><tr><th>Fecha</th><th>Cliente</th><th>Productos</th><th>Total</th><th>Ganancia</th><th>Acciones</th></tr></thead>
+          <tbody id="salesTableBody"><tr><td colspan="6" class="text-center text-gray" style="padding:40px;">No hay ventas registradas</td></tr></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRODUCTOS -->
+    <div class="page-content hidden" id="section-productos">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
+        <div><h1 class="page-title">🛒 Productos</h1><p class="page-subtitle" id="productCount">0 productos registrados</p></div>
+        <button class="btn btn-primary btn-round" onclick="openProductModal()">+ Nuevo Producto</button>
+      </div>
+      <div class="card mb-3" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="productSearch" placeholder="Buscar producto..." style="width:250px;" onkeyup="filterProducts(this.value)">
+        <select id="productCategoryFilter" onchange="filterProducts()" style="width:180px;"><option value="">Todas las categorías</option></select>
+        <select id="productStatusFilter" onchange="filterProducts()" style="width:150px;"><option value="">Todos</option><option value="activo">Activos</option><option value="inactivo">Inactivos</option></select>
+      </div>
+      <div class="grid-4 grid" style="gap:16px;" id="productsGrid">
+        <div class="card text-center text-gray" style="grid-column:1/-1;padding:60px;">No hay productos. ¡Agrega el primero!</div>
+      </div>
+    </div>
+
+    <!-- INVENTARIO -->
+    <div class="page-content hidden" id="section-inventario">
+      <h1 class="page-title">📦 Inventario</h1><p class="page-subtitle">Control de stock y movimientos</p>
+      <div class="grid-3 grid" style="gap:16px;margin-bottom:24px;">
+        <div class="stat-card"><div class="stat-icon green">📦</div><div class="stat-info"><h3>Total Productos</h3><div class="stat-value" id="invTotalProducts">0</div></div></div>
+        <div class="stat-card"><div class="stat-icon orange">⚠️</div><div class="stat-info"><h3>Stock Bajo</h3><div class="stat-value" id="invLowStock">0</div></div></div>
+        <div class="stat-card"><div class="stat-icon pink">🚫</div><div class="stat-info"><h3>Agotados</h3><div class="stat-value" id="invOutOfStock">0</div></div></div>
+      </div>
+      <div class="table-container">
+        <div class="table-header"><h3>Movimientos de Inventario</h3><button class="btn btn-sm btn-primary" onclick="openAdjustModal()">Ajustar Stock</button></div>
+        <div style="overflow-x:auto;">
+          <table><thead><tr><th>Producto</th><th>Stock Actual</th><th>Stock Mínimo</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody id="inventoryTableBody"><tr><td colspan="5" class="text-center text-gray" style="padding:40px;">Sin datos</td></tr></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLIENTES -->
+    <div class="page-content hidden" id="section-clientes">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
+        <div><h1 class="page-title">👥 Clientes</h1><p class="page-subtitle">Gestión de clientes y CRM</p></div>
+        <button class="btn btn-primary btn-round" onclick="openClientModal()">+ Nuevo Cliente</button>
+      </div>
+      <div class="grid-3 grid" style="gap:16px;margin-bottom:24px;">
+        <div class="stat-card"><div class="stat-icon blue">👥</div><div class="stat-info"><h3>Total Clientes</h3><div class="stat-value" id="totalClients">0</div></div></div>
+        <div class="stat-card"><div class="stat-icon green">⭐</div><div class="stat-info"><h3>Frecuentes</h3><div class="stat-value" id="frequentClients">0</div></div></div>
+        <div class="stat-card"><div class="stat-icon purple">🆕</div><div class="stat-info"><h3>Nuevos este mes</h3><div class="stat-value" id="newClients">0</div></div></div>
+      </div>
+      <div class="table-container">
+        <div class="table-header"><h3>Lista de Clientes</h3></div>
+        <div style="overflow-x:auto;">
+          <table><thead><tr><th>Nombre</th><th>Tipo</th><th>Teléfono</th><th>Total Compras</th><th>Última Compra</th><th>Acciones</th></tr></thead>
+          <tbody id="clientsTableBody"><tr><td colspan="6" class="text-center text-gray" style="padding:40px;">Sin clientes</td></tr></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORTES -->
+    <div class="page-content hidden" id="section-reportes">
+      <h1 class="page-title">📈 Reportes y Análisis</h1><p class="page-subtitle">Estadísticas detalladas de tu negocio</p>
+      <div class="tabs">
+        <button class="tab active" onclick="showReportTab('diario')">Diario</button>
+        <button class="tab" onclick="showReportTab('semanal')">Semanal</button>
+        <button class="tab" onclick="showReportTab('mensual')">Mensual</button>
+      </div>
+      <div class="grid-2 grid" style="gap:24px;">
+        <div class="chart-container"><div class="chart-title">Ventas vs Gastos</div><canvas id="reportChart1" class="chart-canvas"></canvas></div>
+        <div class="chart-container"><div class="chart-title">Ganancias</div><canvas id="reportChart2" class="chart-canvas"></canvas></div>
+      </div>
+      <div class="card mt-3"><h3 style="margin-bottom:16px;">Productos Más Vendidos</h3><div id="topProductsList"></div></div>
+    </div>
+
+    <!-- MARKETING -->
+    <div class="page-content hidden" id="section-marketing">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
+        <div><h1 class="page-title">📣 Marketing y Descuentos</h1><p class="page-subtitle">Crea promociones para tus clientes</p></div>
+        <button class="btn btn-primary btn-round" onclick="openDiscountModal()">+ Nuevo Descuento</button>
+      </div>
+      <div class="grid-3 grid" style="gap:16px;" id="discountsGrid">
+        <div class="card text-center text-gray" style="grid-column:1/-1;padding:60px;">No hay descuentos creados</div>
+      </div>
+    </div>
+
+    <!-- NOTIFICACIONES -->
+    <div class="page-content hidden" id="section-notificaciones">
+      <h1 class="page-title">🔔 Notificaciones</h1><p class="page-subtitle">Alertas y avisos del sistema</p>
+      <div id="notificationsList"><div class="card text-center text-gray" style="padding:60px;">No hay notificaciones</div></div>
+    </div>
+
+    <!-- CONFIGURACIÓN -->
+    <div class="page-content hidden" id="section-configuracion">
+      <h1 class="page-title">⚙️ Configuración</h1><p class="page-subtitle">Ajusta tu negocio</p>
+      <div class="card">
+        <h3 style="margin-bottom:16px;">Datos del Negocio</h3>
+        <div class="form-row">
+          <div class="form-group"><label>Nombre del Negocio</label><input type="text" id="cfgBusinessName"></div>
+          <div class="form-group"><label>Moneda</label>
+            <select id="cfgCurrency">
+              <option value="BOB">BOB - Boliviano</option><option value="MXN">MXN - Peso Mexicano</option><option value="USD">USD - Dólar</option><option value="EUR">EUR - Euro</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Impuesto (%)</label><input type="number" id="cfgTax" min="0" max="100" value="13"></div>
+          <div class="form-group"><label></label><button class="btn btn-primary btn-block" onclick="saveConfig()">Guardar Configuración</button></div>
+        </div>
+      </div>
+      <div class="card mt-3">
+        <h3 style="margin-bottom:16px;">Código de Activación</h3>
+        <p class="text-gray mb-2">Ingresa un código para cambiar de plan</p>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="cfgActivationCode" placeholder="XXXXXXXX" maxlength="8" style="text-transform:uppercase;letter-spacing:2px;font-weight:700;">
+          <button class="btn btn-secondary" onclick="activateCodeFromConfig()">Activar</button>
+        </div>
+        <p style="font-size:0.8rem;color:var(--gray);margin-top:8px;">¿No tienes código? <a href="https://wa.me/59173265343?text=Hola%2C%20quiero%20un%20código%20de%20activación%20para%20Control-Ventas" target="_blank" style="color:var(--primary);font-weight:600;">Solicitar por WhatsApp 📱</a></p>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODALES -->
+
+  <!-- Modal: Nueva Venta -->
+  <div class="modal-overlay" id="saleModal">
+    <div class="modal" style="max-width:600px;">
+      <div class="modal-header"><h3>💰 Nueva Venta</h3><button class="modal-close" onclick="closeModal('saleModal')">×</button></div>
+      <div class="form-group"><label>Cliente</label><select id="saleClient"><option value="">Cliente general</option></select></div>
+      <div id="saleItems">
+        <div class="form-row" style="margin-bottom:12px;">
+          <div class="form-group"><label>Producto</label><select class="sale-product" onchange="updateSalePrice(this)"><option value="">Seleccionar...</option></select></div>
+          <div class="form-group"><label>Cantidad</label><input type="number" class="sale-qty" value="1" min="1" onchange="updateSaleTotal()"></div>
+        </div>
+      </div>
+      <button class="btn btn-sm btn-outline mb-3" onclick="addSaleItem()">+ Agregar producto</button>
+      <div style="background:var(--light-2);border-radius:12px;padding:16px;margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;font-size:1.2rem;font-weight:700;"><span>Total:</span><span id="saleTotal">$0.00</span></div>
+      </div>
+      <button class="btn btn-primary btn-block btn-lg btn-round" onclick="saveSale()">Registrar Venta</button>
+    </div>
+  </div>
+
+  <!-- Modal: Nuevo Producto -->
+  <div class="modal-overlay" id="productModal">
+    <div class="modal" style="max-width:700px;">
+      <div class="modal-header"><h3>🛒 Nuevo Producto</h3><button class="modal-close" onclick="closeModal('productModal')">×</button></div>
+      <div class="collapsible open">
+        <button class="collapsible-header" onclick="toggleCollapsible(this)">📋 Información Básica <span class="collapse-icon">▼</span></button>
+        <div class="collapsible-body">
+          <div class="form-row">
+            <div class="form-group"><label>Nombre del Producto *</label><input type="text" id="prodName" required></div>
+            <div class="form-group"><label>Código de Barras</label><input type="text" id="prodBarcode"></div>
+          </div>
+          <div class="form-group"><label>Descripción</label><textarea id="prodDescription" rows="2"></textarea></div>
+          <div class="form-row">
+            <div class="form-group"><label>Categoría</label><input type="text" id="prodCategory" list="categoriesList"><datalist id="categoriesList"></datalist></div>
+            <div class="form-group"><label>Marca</label><input type="text" id="prodBrand"></div>
+          </div>
+        </div>
+      </div>
+      <div class="collapsible open">
+        <button class="collapsible-header" onclick="toggleCollapsible(this)">💲 Precios y Stock <span class="collapse-icon">▼</span></button>
+        <div class="collapsible-body">
+          <div class="form-row-3">
+            <div class="form-group"><label>Precio Compra *</label><input type="number" id="prodCostPrice" step="0.01" min="0" required></div>
+            <div class="form-group"><label>Precio Venta *</label><input type="number" id="prodSalePrice" step="0.01" min="0" required></div>
+            <div class="form-group"><label>Stock Disponible *</label><input type="number" id="prodStock" min="0" required></div>
+          </div>
+          <div class="form-row-3">
+            <div class="form-group"><label>Stock Mínimo</label><input type="number" id="prodMinStock" value="5" min="0"></div>
+            <div class="form-group"><label>Tipo</label><select id="prodType"><option value="unidad">Unidad</option><option value="paquete">Paquete</option></select></div>
+            <div class="form-group"><label>Peso (kg)</label><input type="number" id="prodWeight" step="0.01" min="0"></div>
+          </div>
+        </div>
+      </div>
+      <div class="collapsible">
+        <button class="collapsible-header" onclick="toggleCollapsible(this)">🏷️ Variantes y Etiquetas <span class="collapse-icon">▼</span></button>
+        <div class="collapsible-body">
+          <div class="form-row">
+            <div class="form-group"><label>Variantes</label><input type="text" id="prodVariants" placeholder="Ej: Rojo, Azul, Grande"></div>
+            <div class="form-group"><label>Etiquetas</label><input type="text" id="prodTags" placeholder="Ej: oferta, nuevo"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Estado</label><select id="prodStatus"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></div>
+            <div class="form-group"><label>Sucursal</label><input type="text" id="prodBranch" placeholder="Principal"></div>
+          </div>
+        </div>
+      </div>
+      <div class="collapsible">
+        <button class="collapsible-header" onclick="toggleCollapsible(this)">🖼️ Medios (Imagen / Video / 3D) <span class="collapse-icon">▼</span></button>
+        <div class="collapsible-body">
+          <div class="media-type-tabs" id="mediaTypeTabs">
+            <button class="media-type-tab active" onclick="switchMediaType('imagen')">📷 Imagen</button>
+            <button class="media-type-tab" onclick="switchMediaType('video')" id="mediaTabVideo">🎥 Video</button>
+            <button class="media-type-tab" onclick="switchMediaType('3d')" id="mediaTab3D">🧊 3D</button>
+          </div>
+          <div class="media-upload-area" id="mediaUploadArea" onclick="document.getElementById('mediaFileInput').click()">
+            <div style="font-size:2rem;margin-bottom:8px;">📁</div>
+            <p style="font-weight:600;">Click o arrastra archivos aquí</p>
+            <p style="font-size:0.8rem;color:var(--gray);" id="mediaHint">Imágenes: JPG, PNG, WEBP (máx 5MB)</p>
+            <input type="file" id="mediaFileInput" multiple accept="image/*" style="display:none;" onchange="handleMediaUpload(this.files)">
+          </div>
+          <!-- Opción de agregar imagen por URL -->
+          <div class="media-link-input mt-2">
+            <input type="url" id="mediaLinkUrl" placeholder="https://ejemplo.com/imagen.jpg">
+            <button class="btn btn-sm btn-outline" onclick="addMediaByLink()">+ Agregar Link</button>
+          </div>
+          <div class="media-preview-grid" id="mediaPreviewGrid"></div>
+          <div class="form-group mt-2">
+            <label>Almacenamiento</label>
+            <select id="mediaStorage"><option value="github">GitHub Hosting (gratuito)</option><option value="firebase">Firebase Storage (requiere plan)</option></select>
+          </div>
+        </div>
+      </div>
+      <div class="collapsible">
+        <button class="collapsible-header" onclick="toggleCollapsible(this)">🚚 Información de Envío <span class="collapse-icon">▼</span></button>
+        <div class="collapsible-body">
+          <div class="form-row">
+            <div class="form-group"><label>Requiere envío</label><select id="prodShipping"><option value="no">No</option><option value="si">Sí</option></select></div>
+            <div class="form-group"><label>Costo de envío</label><input type="number" id="prodShippingCost" step="0.01" min="0" value="0"></div>
+          </div>
+        </div>
+      </div>
+      <input type="hidden" id="prodEditId" value="">
+      <button class="btn btn-primary btn-block btn-lg btn-round mt-3" onclick="saveProduct()">Guardar Producto</button>
+    </div>
+  </div>
+
+  <!-- Modal: Nuevo Cliente -->
+  <div class="modal-overlay" id="clientModal">
+    <div class="modal">
+      <div class="modal-header"><h3>👥 Nuevo Cliente</h3><button class="modal-close" onclick="closeModal('clientModal')">×</button></div>
+      <div class="form-group"><label>Nombre completo *</label><input type="text" id="clientName" required></div>
+      <div class="form-row">
+        <div class="form-group"><label>Teléfono</label><input type="tel" id="clientPhone"></div>
+        <div class="form-group"><label>Email</label><input type="email" id="clientEmail"></div>
+      </div>
+      <div class="form-group"><label>Tipo de cliente</label><select id="clientType"><option value="nuevo">Nuevo</option><option value="frecuente">Frecuente</option><option value="mayorista">Mayorista</option></select></div>
+      <div class="form-group"><label>Notas</label><textarea id="clientNotes" rows="2"></textarea></div>
+      <input type="hidden" id="clientEditId" value="">
+      <button class="btn btn-primary btn-block btn-lg btn-round" onclick="saveClient()">Guardar Cliente</button>
+    </div>
+  </div>
+
+  <!-- Modal: Descuento -->
+  <div class="modal-overlay" id="discountModal">
+    <div class="modal">
+      <div class="modal-header"><h3>📣 Nuevo Descuento</h3><button class="modal-close" onclick="closeModal('discountModal')">×</button></div>
+      <div class="form-group"><label>Nombre de la promoción *</label><input type="text" id="discountName" required></div>
+      <div class="form-row">
+        <div class="form-group"><label>Descuento (%)</label><input type="number" id="discountPercent" min="1" max="100" value="10"></div>
+        <div class="form-group"><label>Válido hasta</label><input type="date" id="discountExpiry"></div>
+      </div>
+      <div class="form-group"><label>Aplicar a producto</label><select id="discountProduct"><option value="todos">Todos</option></select></div>
+      <button class="btn btn-primary btn-block btn-lg btn-round" onclick="saveDiscount()">Crear Descuento</button>
+    </div>
+  </div>
+
+  <!-- Modal: Ajustar Stock -->
+  <div class="modal-overlay" id="adjustModal">
+    <div class="modal">
+      <div class="modal-header"><h3>📦 Ajustar Stock</h3><button class="modal-close" onclick="closeModal('adjustModal')">×</button></div>
+      <div class="form-group"><label>Producto</label><select id="adjustProduct"></select></div>
+      <div class="form-row">
+        <div class="form-group"><label>Tipo de movimiento</label><select id="adjustType"><option value="entrada">Entrada</option><option value="salida">Salida</option></select></div>
+        <div class="form-group"><label>Cantidad</label><input type="number" id="adjustQty" min="1" value="1"></div>
+      </div>
+      <div class="form-group"><label>Motivo</label><input type="text" id="adjustReason" placeholder="Reabastecimiento, corrección..."></div>
+      <button class="btn btn-primary btn-block btn-lg btn-round" onclick="saveAdjustment()">Guardar Ajuste</button>
+    </div>
+  </div>
+
+  <!-- Modal: Plan -->
+  <div class="modal-overlay" id="planModal">
+    <div class="modal plan-modal" style="max-width:600px;">
+      <div class="modal-header"><h3>💳 Tu Plan Actual</h3><button class="modal-close" onclick="closeModal('planModal')">×</button></div>
+      <div id="currentPlanInfo" style="margin-bottom:20px;"></div>
+      <h4 style="margin-bottom:12px;">Cambiar de Plan</h4>
+      <div class="plan-options" id="planOptions"></div>
+      <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--light);">
+        <p style="font-size:0.85rem;color:var(--gray);margin-bottom:8px;">Ingresa código de activación:</p>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="planActivationCode" maxlength="8" placeholder="XXXXXXXX" style="text-transform:uppercase;letter-spacing:2px;font-weight:700;">
+          <button class="btn btn-secondary" onclick="activatePlanCode()">Activar</button>
+        </div>
+        <p style="font-size:0.8rem;color:var(--gray);margin-top:8px;">¿No tienes código? <a href="https://wa.me/59173265343?text=Hola%2C%20quiero%20un%20código%20de%20activación%20para%20Control-Ventas" target="_blank" style="color:var(--primary);font-weight:600;">Solicitar por WhatsApp 📱</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Extracto -->
+  <div class="modal-overlay" id="extractoModal">
+    <div class="modal" style="max-width:500px;">
+      <div class="modal-header"><h3>📄 Generar Extracto</h3><button class="modal-close" onclick="closeModal('extractoModal')">×</button></div>
+      <div id="extractoInfo"></div>
+      <p style="font-size:0.9rem;color:var(--dark);margin:16px 0 8px;font-weight:600;">Elige el formato:</p>
+      <div class="extracto-options">
+        <div class="extracto-option" onclick="generateExtracto('pdf'); closeModal('extractoModal');">
+          <div class="extracto-icon">📄</div>
+          <div style="font-weight:600;">PDF</div>
+          <div style="font-size:0.8rem;color:var(--gray);">Documento descargable</div>
+        </div>
+        <div class="extracto-option" onclick="generateExtracto('imagen'); closeModal('extractoModal');">
+          <div class="extracto-icon">🖼️</div>
+          <div style="font-weight:600;">Imagen</div>
+          <div style="font-size:0.8rem;color:var(--gray);">Captura del reporte</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- WhatsApp flotante -->
+  <a href="https://wa.me/59173265343?text=Hola%2C%20necesito%20ayuda%20con%20Control-Ventas" class="whatsapp-float" target="_blank" title="WhatsApp">
+    <svg viewBox="0 0 32 32" width="32" height="32" fill="white"><path d="M16 0C7.163 0 0 7.163 0 16c0 2.837.736 5.593 2.138 8.032L.073 31.927l8.169-2.042A15.93 15.93 0 0016 32c8.837 0 16-7.163 16-16S24.837 0 16 0zm8.082 22.617c-.34.954-1.996 1.826-2.75 1.943-.712.11-1.617.157-2.608-.163a23.91 23.91 0 01-2.36-.873c-4.15-1.792-6.867-5.99-7.077-6.27-.21-.28-1.72-2.289-1.72-4.367 0-2.078 1.088-3.102 1.474-3.524.387-.422.844-.528 1.126-.528.282 0 .563.003.81.015.26.013.607-.098.95.724.34.823 1.16 2.838 1.264 3.043.105.205.175.445.035.718-.14.273-.21.443-.42.683-.21.24-.44.536-.63.72-.21.204-.428.426-.184.836.244.41 1.085 1.79 2.33 2.9 1.598 1.424 2.945 1.866 3.364 2.076.42.21.665.176.91-.106.244-.282 1.05-1.226 1.33-1.648.28-.422.56-.352.94-.21.382.14 2.417 1.14 2.83 1.348.414.21.69.315.79.49.105.175.105 1.012-.234 1.988z"/></svg>
+  </a>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/pdf-generator.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
