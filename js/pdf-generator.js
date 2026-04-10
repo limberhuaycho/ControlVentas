@@ -72,11 +72,24 @@ async function generateExtracto(format = 'pdf') {
   const ventasMes = Object.values(ventasData).filter(v => v.fecha && v.fecha.startsWith(currentMonth));
 
   let totalIngresos = 0;
-  let totalGanancias = 0;
+
   ventasMes.forEach(v => {
-    totalIngresos += v.total || 0;
-    totalGanancias += v.ganancia || 0;
+  totalIngresos += v.total || 0;
   });
+
+// ✅ NUEVO: Obtener gastos reales
+  const gastosSnap = await userRef.child('gastos').once('value');
+  const gastosData = gastosSnap.val() || {};
+
+  let totalGastos = 0;
+  Object.values(gastosData).forEach(g => {
+    if (g.fecha && g.fecha.startsWith(currentMonth)) {
+      totalGastos += g.monto || 0;
+    }
+  });
+
+  // ✅ NUEVO: Ganancia REAL
+  const totalGanancias = totalIngresos - totalGastos;
 
   // Obtener productos
   const prodSnap = await userRef.child('productos').once('value');
@@ -124,8 +137,8 @@ async function generateExtracto(format = 'pdf') {
     const items = [
       ['Total de Ventas:', ventasMes.length.toString()],
       ['Ingresos Totales:', '$' + totalIngresos.toFixed(2)],
-      ['Ganancias Netas:', '$' + totalGanancias.toFixed(2)],
-      ['Gastos Estimados:', '$' + (totalIngresos - totalGanancias).toFixed(2)],
+      ['Gastos Reales:', '$' + totalGastos.toFixed(2)],
+      ['Ganancia Neta:', '$' + totalGanancias.toFixed(2)],
       ['Productos Registrados:', totalProductos.toString()],
       ['Plan Actual:', (userProfile?.plan || 'Gratuito').charAt(0).toUpperCase() + (userProfile?.plan || 'gratuito').slice(1)]
     ];
