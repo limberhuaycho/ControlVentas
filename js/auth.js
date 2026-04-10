@@ -126,10 +126,11 @@ async function handleGoogleRegister() {
     const result = await auth.signInWithPopup(googleProvider);
     const user = result.user;
 
-    // Verificar si ya tiene perfil
+    // Verificar si ya tiene perfil COMPLETO
     const snap = await getUserDB(user.uid).child('perfil').once('value');
-    if (snap.val()) {
-      // Ya registrado, redirigir
+    const perfil = snap.val();
+    if (perfil && perfil.nombre && perfil.negocio) {
+      // Ya registrado con perfil completo, redirigir
       showToast('¡Bienvenido de vuelta!', 'success');
       setTimeout(() => window.location.href = 'app.html', 1000);
       return;
@@ -304,10 +305,11 @@ async function handleGoogleLogin() {
       return;
     }
 
-    // Verificar si tiene perfil
+    // Verificar si tiene perfil COMPLETO (con nombre y negocio)
     const snap = await getUserDB(user.uid).child('perfil').once('value');
-    if (!snap.val()) {
-      // No tiene perfil, mostrar form de registro Google
+    const perfil = snap.val();
+    if (!perfil || !perfil.nombre || !perfil.negocio) {
+      // No tiene perfil completo, mostrar form de registro Google
       pendingGoogleUser = user;
       document.getElementById('loginForm').classList.add('hidden');
       document.getElementById('registerForm').classList.add('hidden');
@@ -319,7 +321,6 @@ async function handleGoogleLogin() {
       return;
     }
 
-    const perfil = snap.val();
     if (perfil.activo === false) {
       showToast('Tu cuenta está desactivada.', 'error');
       await auth.signOut();
@@ -408,7 +409,12 @@ auth.onAuthStateChanged(async (user) => {
     const isAdmin = await verificarAdmin(user.uid, user.email);
     if (isAdmin) {
       window.location.href = 'admin.html';
-    } else {
+      return;
+    }
+    // Solo redirigir si tiene perfil completo
+    const snap = await getUserDB(user.uid).child('perfil').once('value');
+    const perfil = snap.val();
+    if (perfil && perfil.nombre && perfil.negocio) {
       window.location.href = 'app.html';
     }
   }

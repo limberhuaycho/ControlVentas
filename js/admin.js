@@ -120,8 +120,14 @@ function renderAdminUsers(users) {
 }
 
 async function toggleUserStatus(uid, currentActive) {
-  await db.ref('usuarios/' + uid + '/perfil/activo').set(!currentActive);
-  showToast(currentActive ? 'Usuario desactivado' : 'Usuario activado', 'success');
+  showConfirm(
+    currentActive ? '¿Desactivar este usuario?' : '¿Activar este usuario?',
+    currentActive ? 'El usuario no podrá ingresar al sistema.' : 'El usuario podrá acceder nuevamente.',
+    async () => {
+      await db.ref('usuarios/' + uid + '/perfil/activo').set(!currentActive);
+      showToast(currentActive ? 'Usuario desactivado' : 'Usuario activado', 'success');
+    }
+  );
 }
 
 async function viewUserData(uid) {
@@ -131,7 +137,65 @@ async function viewUserData(uid) {
   const productos = data.productos ? Object.keys(data.productos).length : 0;
   const extractos = data.extractos ? Object.keys(data.extractos).length : 0;
   const p = data.perfil || {};
-  alert(`Usuario: ${p.nombre}\nEmail: ${p.email}\nNegocio: ${p.negocio}\nPlan: ${p.plan}\nProductos: ${productos}\nVentas: ${ventas}\nExtractos generados: ${extractos}\nRegistro: ${p.fechaRegistro || '-'}`);
+  showUserModal(uid, p, productos, ventas, extractos);
+}
+
+function showUserModal(uid, p, productos, ventas, extractos) {
+  // Crear modal si no existe
+  let modal = document.getElementById('adminUserModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'adminUserModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `
+    <div style="background:var(--white);border-radius:20px;padding:32px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+        <div style="width:48px;height:48px;border-radius:14px;background:var(--gradient-1);display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:white;">${(p.nombre||'U').charAt(0).toUpperCase()}</div>
+        <div>
+          <div style="font-weight:800;font-size:1.1rem;">${p.nombre||'Sin nombre'}</div>
+          <div style="font-size:0.8rem;color:var(--gray);">${p.email||'-'}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+        <div style="background:var(--light-2);border-radius:12px;padding:12px;text-align:center;">
+          <div style="font-size:1.5rem;font-weight:800;color:var(--primary);">${productos}</div>
+          <div style="font-size:0.75rem;color:var(--gray);">Productos</div>
+        </div>
+        <div style="background:var(--light-2);border-radius:12px;padding:12px;text-align:center;">
+          <div style="font-size:1.5rem;font-weight:800;color:var(--success);">${ventas}</div>
+          <div style="font-size:0.75rem;color:var(--gray);">Ventas</div>
+        </div>
+        <div style="background:var(--light-2);border-radius:12px;padding:12px;text-align:center;">
+          <div style="font-size:1.5rem;font-weight:800;color:var(--secondary);">${extractos}</div>
+          <div style="font-size:0.75rem;color:var(--gray);">Extractos</div>
+        </div>
+        <div style="background:var(--light-2);border-radius:12px;padding:12px;text-align:center;">
+          <div style="font-size:1rem;font-weight:800;color:var(--accent);">${(p.plan||'gratuito').toUpperCase()}</div>
+          <div style="font-size:0.75rem;color:var(--gray);">Plan</div>
+        </div>
+      </div>
+      <div style="font-size:0.85rem;color:var(--gray);margin-bottom:20px;">
+        <div><strong>Negocio:</strong> ${p.negocio||'-'}</div>
+        <div><strong>Teléfono:</strong> ${p.telefono||'-'}</div>
+        <div><strong>Registro:</strong> ${p.fechaRegistro ? new Date(p.fechaRegistro).toLocaleDateString('es-MX') : '-'}</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="document.getElementById('adminUserModal').style.display='none'" style="flex:1;padding:12px;border-radius:10px;border:1.5px solid var(--light);background:var(--white);font-weight:600;cursor:pointer;font-size:0.9rem;">Cerrar</button>
+        <button onclick="deleteUserData('${uid}');document.getElementById('adminUserModal').style.display='none';" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--danger,#e74c3c);color:white;font-weight:700;cursor:pointer;font-size:0.9rem;">🗑️ Eliminar</button>
+      </div>
+    </div>
+  `;
+  modal.style.display = 'flex';
+  modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+}
+
+async function deleteUserData(uid) {
+  showConfirm('¿Eliminar todos los datos de este usuario?', 'Esta acción no se puede deshacer.', async () => {
+    await db.ref('usuarios/' + uid).remove();
+    showToast('Usuario eliminado', 'success');
+  });
 }
 
 function updateAdminStats(users) {
@@ -246,23 +310,25 @@ async function savePlan(key) {
 
 async function deletePlan(key) {
   if (key === 'gratuito') { showToast('No puedes eliminar el plan gratuito', 'error'); return; }
-  if (!confirm('¿Eliminar este plan?')) return;
-  await db.ref('planesConfig/' + key).remove();
-  loadPlansEditor();
-  showToast('Plan eliminado', 'success');
+  showConfirm('¿Eliminar este plan?', 'Esta acción no se puede deshacer.', async () => {
+    await db.ref('planesConfig/' + key).remove();
+    loadPlansEditor();
+    showToast('Plan eliminado', 'success');
+  });
 }
 
 function addNewPlan() {
-  const id = prompt('ID del nuevo plan (sin espacios, ej: empresarial):');
-  if (!id) return;
-  const key = id.toLowerCase().replace(/\s/g, '');
-  db.ref('planesConfig/' + key).set({
-    nombre: id.charAt(0).toUpperCase() + id.slice(1),
-    precio: 0, periodo: 'por mes', limiteProductos: 100, limiteVentasDia: 50, limiteVentasMes: 1000,
-    limiteExtractosDia: 3, limiteExtractosMes: 15,
-    textoBoton: 'Elegir Plan', descripcion: 'Nuevo plan',
-    mediaPermisos: { imagen:true, video:false, modelo3d:false, firebaseStorage:false, githubHosting:true }
-  }).then(() => { loadPlansEditor(); showToast('Plan creado ✅', 'success'); });
+  showPrompt('Nuevo Plan', 'ID del nuevo plan (sin espacios, ej: empresarial):', 'empresarial', (id) => {
+    if (!id) return;
+    const key = id.toLowerCase().replace(/\s/g, '');
+    db.ref('planesConfig/' + key).set({
+      nombre: id.charAt(0).toUpperCase() + id.slice(1),
+      precio: 0, periodo: 'por mes', limiteProductos: 100, limiteVentasDia: 50, limiteVentasMes: 1000,
+      limiteExtractosDia: 3, limiteExtractosMes: 15,
+      textoBoton: 'Elegir Plan', descripcion: 'Nuevo plan',
+      mediaPermisos: { imagen:true, video:false, modelo3d:false, firebaseStorage:false, githubHosting:true }
+    }).then(() => { loadPlansEditor(); showToast('Plan creado ✅', 'success'); });
+  });
 }
 
 // ============================================
@@ -305,5 +371,65 @@ function renderCodes(codes) {
 }
 
 function adminLogout() {
-  if (confirm('¿Cerrar sesión?')) auth.signOut().then(() => window.location.reload());
+  showConfirm('¿Cerrar sesión?', 'Volverás a la pantalla de inicio.', () => {
+    auth.signOut().then(() => window.location.reload());
+  });
+}
+
+// ============================================
+// MODALES DE CONFIRMACIÓN / PROMPT (reemplaza alert/confirm/prompt)
+// ============================================
+function showConfirm(title, message, onConfirm) {
+  let modal = document.getElementById('adminConfirmModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'adminConfirmModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;';
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `
+    <div style="background:var(--white);border-radius:20px;padding:28px;max-width:360px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);text-align:center;">
+      <div style="font-size:2rem;margin-bottom:12px;">⚠️</div>
+      <h3 style="font-weight:800;margin-bottom:8px;font-size:1.1rem;">${title}</h3>
+      <p style="color:var(--gray);font-size:0.9rem;margin-bottom:24px;">${message}</p>
+      <div style="display:flex;gap:10px;">
+        <button id="adminConfirmCancel" style="flex:1;padding:13px;border-radius:10px;border:1.5px solid var(--light);background:var(--white);font-weight:600;cursor:pointer;font-size:0.95rem;">Cancelar</button>
+        <button id="adminConfirmOk" style="flex:1;padding:13px;border-radius:10px;border:none;background:var(--gradient-1);color:white;font-weight:700;cursor:pointer;font-size:0.95rem;">Confirmar</button>
+      </div>
+    </div>
+  `;
+  modal.style.display = 'flex';
+  modal.querySelector('#adminConfirmCancel').onclick = () => { modal.style.display = 'none'; };
+  modal.querySelector('#adminConfirmOk').onclick = () => { modal.style.display = 'none'; onConfirm(); };
+  modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+}
+
+function showPrompt(title, message, placeholder, onConfirm) {
+  let modal = document.getElementById('adminPromptModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'adminPromptModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;';
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `
+    <div style="background:var(--white);border-radius:20px;padding:28px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+      <h3 style="font-weight:800;margin-bottom:8px;font-size:1.1rem;">${title}</h3>
+      <p style="color:var(--gray);font-size:0.9rem;margin-bottom:16px;">${message}</p>
+      <input id="adminPromptInput" type="text" placeholder="${placeholder}" value="${placeholder}" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid var(--light);font-size:0.95rem;margin-bottom:16px;box-sizing:border-box;">
+      <div style="display:flex;gap:10px;">
+        <button id="adminPromptCancel" style="flex:1;padding:13px;border-radius:10px;border:1.5px solid var(--light);background:var(--white);font-weight:600;cursor:pointer;font-size:0.95rem;">Cancelar</button>
+        <button id="adminPromptOk" style="flex:1;padding:13px;border-radius:10px;border:none;background:var(--gradient-1);color:white;font-weight:700;cursor:pointer;font-size:0.95rem;">Crear</button>
+      </div>
+    </div>
+  `;
+  modal.style.display = 'flex';
+  modal.querySelector('#adminPromptCancel').onclick = () => { modal.style.display = 'none'; };
+  modal.querySelector('#adminPromptOk').onclick = () => {
+    const val = modal.querySelector('#adminPromptInput').value.trim();
+    modal.style.display = 'none';
+    onConfirm(val);
+  };
+  modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+  setTimeout(() => modal.querySelector('#adminPromptInput').focus(), 100);
 }

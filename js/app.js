@@ -507,20 +507,23 @@ function renderProducts() {
   }
 
   grid.innerHTML = entries.map(([id, p]) => `
-    <div class="card card-3d" style="cursor:pointer;" onclick="editProduct('${id}')">
-      ${p.imagenes && p.imagenes.length > 0 ? 
-        `<img src="${p.imagenes[0].url}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:12px;">` : 
-        `<div style="width:100%;height:80px;background:var(--light-2);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;font-size:2rem;">📦</div>`
-      }
-      <h4 style="font-size:0.95rem;margin-bottom:4px;">${p.nombre}</h4>
-      <p style="font-size:0.8rem;color:var(--gray);margin-bottom:8px;">${p.categoria || 'Sin categoría'}</p>
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-weight:800;color:var(--primary);font-size:1.1rem;">$${(p.precioVenta || 0).toFixed(2)}</span>
-        <span class="badge-status ${p.stock <= (p.stockMinimo || 5) ? 'badge-inactive' : 'badge-active'}">${p.stock} uds</span>
+    <div class="card card-3d" style="position:relative;">
+      <div style="cursor:pointer;" onclick="editProduct('${id}')">
+        ${p.imagenes && p.imagenes.length > 0 ? 
+          `<img src="${p.imagenes[0].url}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:12px;">` : 
+          `<div style="width:100%;height:80px;background:var(--light-2);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;font-size:2rem;">📦</div>`
+        }
+        <h4 style="font-size:0.95rem;margin-bottom:4px;">${p.nombre}</h4>
+        <p style="font-size:0.8rem;color:var(--gray);margin-bottom:8px;">${p.categoria || 'Sin categoría'}</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-weight:800;color:var(--primary);font-size:1.1rem;">$${(p.precioVenta || 0).toFixed(2)}</span>
+          <span class="badge-status ${p.stock <= (p.stockMinimo || 5) ? 'badge-inactive' : 'badge-active'}">${p.stock} uds</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <span class="badge-status badge-${p.estado === 'activo' ? 'active' : 'inactive'}">${p.estado || 'activo'}</span>
+        </div>
       </div>
-      <div style="display:flex;gap:6px;margin-top:8px;">
-        <span class="badge-status badge-${p.estado === 'activo' ? 'active' : 'inactive'}">${p.estado || 'activo'}</span>
-      </div>
+      <button onclick="deleteProduct('${id}')" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:8px;border:none;background:rgba(231,76,60,0.12);color:#e74c3c;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.2s;" title="Eliminar producto" onmouseover="this.style.background='rgba(231,76,60,0.25)'" onmouseout="this.style.background='rgba(231,76,60,0.12)'">🗑️</button>
     </div>
   `).join('');
 }
@@ -550,13 +553,39 @@ function editProduct(id) {
 }
 
 async function deleteProduct(id) {
-  if (!confirm('¿Eliminar este producto?')) return;
-  try {
-    await userRef.child('productos/' + id).remove();
-    showToast('Producto eliminado', 'success');
-  } catch (e) {
-    showToast('Error al eliminar', 'error');
+  showConfirmModal('¿Eliminar producto?', 'Esta acción no se puede deshacer.', async () => {
+    try {
+      await userRef.child('productos/' + id).remove();
+      showToast('Producto eliminado', 'success');
+    } catch (e) {
+      showToast('Error al eliminar', 'error');
+    }
+  });
+}
+
+function showConfirmModal(title, message, onConfirm) {
+  let modal = document.getElementById('appConfirmModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'appConfirmModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;';
+    document.body.appendChild(modal);
   }
+  modal.innerHTML = `
+    <div style="background:var(--white);border-radius:20px;padding:28px;max-width:360px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);text-align:center;">
+      <div style="font-size:2rem;margin-bottom:12px;">⚠️</div>
+      <h3 style="font-weight:800;margin-bottom:8px;font-size:1.1rem;">${title}</h3>
+      <p style="color:var(--gray);font-size:0.9rem;margin-bottom:24px;">${message}</p>
+      <div style="display:flex;gap:10px;">
+        <button id="appConfirmCancel" style="flex:1;padding:13px;border-radius:10px;border:1.5px solid var(--light);background:var(--white);font-weight:600;cursor:pointer;font-size:0.95rem;">Cancelar</button>
+        <button id="appConfirmOk" style="flex:1;padding:13px;border-radius:10px;border:none;background:#e74c3c;color:white;font-weight:700;cursor:pointer;font-size:0.95rem;">🗑️ Eliminar</button>
+      </div>
+    </div>
+  `;
+  modal.style.display = 'flex';
+  modal.querySelector('#appConfirmCancel').onclick = () => { modal.style.display = 'none'; };
+  modal.querySelector('#appConfirmOk').onclick = () => { modal.style.display = 'none'; onConfirm(); };
+  modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
 }
 
 function filterProducts(search) {
@@ -701,19 +730,40 @@ function updateSaleTotal() {
 }
 
 async function deleteSale(id) {
-  if (!confirm('¿Eliminar esta venta?')) return;
-  await userRef.child('ventas/' + id).remove();
-  showToast('Venta eliminada', 'success');
+  showConfirmModal('¿Eliminar esta venta?', 'Esta acción no se puede deshacer.', async () => {
+    await userRef.child('ventas/' + id).remove();
+    showToast('Venta eliminada', 'success');
+  });
 }
 
 function viewSale(id) {
-  // Simple alert with sale details
-  const snap = userRef.child('ventas/' + id).once('value').then(s => {
+  userRef.child('ventas/' + id).once('value').then(s => {
     const v = s.val();
     if (!v) return;
-    let details = `Fecha: ${new Date(v.fecha).toLocaleString('es-MX')}\nCliente: ${v.cliente}\nTotal: $${v.total.toFixed(2)}\nGanancia: $${v.ganancia.toFixed(2)}\n\nProductos:\n`;
-    (v.items || []).forEach(i => { details += `- ${i.nombre} x${i.cantidad} = $${i.subtotal.toFixed(2)}\n`; });
-    alert(details);
+    let items = (v.items || []).map(i => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--light);font-size:0.85rem;"><span>${i.nombre} x${i.cantidad}</span><span style="font-weight:700;">$${(i.subtotal||0).toFixed(2)}</span></div>`).join('');
+    let modal = document.getElementById('appSaleViewModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'appSaleViewModal';
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;';
+      document.body.appendChild(modal);
+    }
+    modal.innerHTML = `
+      <div style="background:var(--white);border-radius:20px;padding:28px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-height:80vh;overflow-y:auto;">
+        <h3 style="font-weight:800;margin-bottom:16px;">🧾 Detalle de Venta</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+          <div style="background:var(--light-2);border-radius:10px;padding:10px;"><div style="font-size:0.75rem;color:var(--gray);">Fecha</div><div style="font-weight:700;font-size:0.85rem;">${new Date(v.fecha).toLocaleString('es-MX')}</div></div>
+          <div style="background:var(--light-2);border-radius:10px;padding:10px;"><div style="font-size:0.75rem;color:var(--gray);">Cliente</div><div style="font-weight:700;font-size:0.85rem;">${v.cliente||'General'}</div></div>
+          <div style="background:var(--light-2);border-radius:10px;padding:10px;"><div style="font-size:0.75rem;color:var(--gray);">Total</div><div style="font-weight:800;color:var(--primary);">$${(v.total||0).toFixed(2)}</div></div>
+          <div style="background:var(--light-2);border-radius:10px;padding:10px;"><div style="font-size:0.75rem;color:var(--gray);">Ganancia</div><div style="font-weight:800;color:var(--success);">$${(v.ganancia||0).toFixed(2)}</div></div>
+        </div>
+        <h4 style="margin-bottom:8px;font-size:0.9rem;">Productos</h4>
+        ${items}
+        <button onclick="document.getElementById('appSaleViewModal').style.display='none'" style="width:100%;margin-top:20px;padding:13px;border-radius:10px;border:none;background:var(--gradient-1);color:white;font-weight:700;cursor:pointer;font-size:0.95rem;">Cerrar</button>
+      </div>
+    `;
+    modal.style.display = 'flex';
+    modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
   });
 }
 
@@ -1228,11 +1278,11 @@ function showToast(message, type = 'success') {
 }
 
 function handleLogout() {
-  if (confirm('¿Cerrar sesión?')) {
+  showConfirmModal('¿Cerrar sesión?', 'Serás redirigido al inicio.', () => {
     auth.signOut().then(() => {
       window.location.href = 'login.html';
     });
-  }
+  });
 }
 
 function handleSearch(value) {
