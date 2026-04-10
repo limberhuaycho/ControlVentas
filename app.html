@@ -33,6 +33,9 @@
         <div class="nav-item" onclick="showSection('ventas')">
           <span class="nav-icon">💰</span> Ventas
         </div>
+        <div class="nav-item" onclick="showSection('gastos')">
+          <span class="nav-icon">📉</span> Gastos
+        </div>
         <div class="nav-item" onclick="showSection('productos')">
           <span class="nav-icon">🛒</span> Productos
         </div>
@@ -113,14 +116,23 @@
           <div class="stat-icon purple">📊</div>
           <div class="stat-info"><h3>Ingresos Mensuales</h3><div class="stat-value" id="ingresosMes">$0</div><div class="stat-change positive" id="ingresosMesChange">↗ +0%</div></div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" style="cursor:pointer;" onclick="showSection('gastos')" title="Ver y registrar gastos">
           <div class="stat-icon pink">📉</div>
-          <div class="stat-info"><h3>Gastos</h3><div class="stat-value" id="gastosMes">$0</div><div class="stat-change negative" id="gastosMesChange">↘ -0%</div></div>
+          <div class="stat-info"><h3>Gastos del Mes</h3><div class="stat-value" id="gastosMes">$0</div><div class="stat-change negative" id="gastosMesChange">↘ Ver gastos</div></div>
         </div>
         <div class="stat-card">
           <div class="stat-icon blue">💎</div>
-          <div class="stat-info"><h3>Ganancia Neta</h3><div class="stat-value" id="gananciaNeta">$0</div><div class="stat-change positive" id="gananciaChange">↗ +0%</div></div>
+          <div class="stat-info"><h3>Ganancia Neta</h3><div class="stat-value" id="gananciaNeta">$0</div><div class="stat-change positive" id="gananciaChange">Ingresos − Gastos</div></div>
         </div>
+      </div>
+      <!-- Acceso rápido a gastos -->
+      <div style="margin-bottom:20px;">
+        <button class="btn btn-round" style="background:linear-gradient(135deg,#e17055,#d63031);color:white;font-weight:700;display:inline-flex;align-items:center;gap:8px;" onclick="showSection('gastos');openGastoModal()">
+          📉 Registrar Gasto
+        </button>
+        <button class="btn btn-round btn-outline" style="margin-left:8px;" onclick="showSection('gastos')">
+          Ver todos los gastos
+        </button>
       </div>
 
       <div id="stockAlerts" class="hidden" style="margin-bottom:24px;">
@@ -287,7 +299,80 @@
         <p style="font-size:0.8rem;color:var(--gray);margin-top:8px;">¿No tienes código? <a href="https://wa.me/59173265343?text=Hola%2C%20quiero%20un%20código%20de%20activación%20para%20Control-Ventas" target="_blank" style="color:var(--primary);font-weight:600;">Solicitar por WhatsApp 📱</a></p>
       </div>
     </div>
+    <!-- GASTOS -->
+    <div class="page-content hidden" id="section-gastos">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
+        <div><h1 class="page-title">📉 Gastos</h1><p class="page-subtitle">Registra y controla tus gastos del negocio</p></div>
+        <button class="btn btn-round" style="background:linear-gradient(135deg,#e17055,#d63031);color:white;font-weight:700;" onclick="openGastoModal()">+ Nuevo Gasto</button>
+      </div>
+      <!-- Stats por tipo -->
+      <div class="grid grid-4" style="gap:14px;margin-bottom:20px;margin-top:8px;">
+        <div class="stat-card" style="border-left:3px solid #6c5ce7;">
+          <div class="stat-icon purple" style="font-size:1.2rem;">🛒</div>
+          <div class="stat-info"><h3 style="font-size:0.8rem;">Ventas (gastos)</h3><div class="stat-value" style="font-size:1.1rem;" id="gastoStat_Venta">$0</div></div>
+        </div>
+        <div class="stat-card" style="border-left:3px solid #00cec9;">
+          <div class="stat-icon blue" style="font-size:1.2rem;">⚡</div>
+          <div class="stat-info"><h3 style="font-size:0.8rem;">Servicios</h3><div class="stat-value" style="font-size:1.1rem;" id="gastoStat_Servicios">$0</div></div>
+        </div>
+        <div class="stat-card" style="border-left:3px solid #fdcb6e;">
+          <div class="stat-icon orange" style="font-size:1.2rem;">🚌</div>
+          <div class="stat-info"><h3 style="font-size:0.8rem;">Pasaje</h3><div class="stat-value" style="font-size:1.1rem;" id="gastoStat_Pasaje">$0</div></div>
+        </div>
+        <div class="stat-card" style="border-left:3px solid #e17055;">
+          <div class="stat-icon pink" style="font-size:1.2rem;">🏠</div>
+          <div class="stat-info"><h3 style="font-size:0.8rem;">Alquiler</h3><div class="stat-value" style="font-size:1.1rem;" id="gastoStat_Alquiler">$0</div></div>
+        </div>
+      </div>
+      <div class="stat-card" style="margin-bottom:20px;border-left:3px solid #d63031;display:flex;align-items:center;gap:16px;">
+        <div class="stat-icon pink">📉</div>
+        <div>
+          <h3 style="font-size:0.85rem;color:var(--gray);">Total Gastos del Mes</h3>
+          <div class="stat-value" id="gastosTotalMes">$0</div>
+        </div>
+        <div style="margin-left:auto;font-size:0.8rem;color:var(--gray);">Otros: <strong id="gastoStat_Otros">$0</strong></div>
+      </div>
+
+      <!-- Tabla de gastos -->
+      <div class="table-container">
+        <div class="table-header"><h3>Historial de Gastos</h3></div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>Fecha</th><th>Descripción</th><th>Tipo</th><th>Monto</th><th>Acciones</th></tr></thead>
+            <tbody id="gastosTableBody"><tr><td colspan="5" class="text-center text-gray" style="padding:40px;">No hay gastos registrados</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </main>
+
+  <!-- Modal: Nuevo Gasto -->
+  <div class="modal-overlay" id="gastoModal">
+    <div class="modal" style="max-width:480px;">
+      <div class="modal-header"><h3>📉 Registrar Gasto</h3><button class="modal-close" onclick="closeModal('gastoModal')">×</button></div>
+      <div class="form-group"><label>Descripción *</label><input type="text" id="gastoDescripcion" placeholder="Ej: Compra de mercadería, pago de luz..."></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Tipo de Gasto</label>
+          <select id="gastoTipo">
+            <option value="Venta">🛒 Venta</option>
+            <option value="Servicios">⚡ Servicios</option>
+            <option value="Pasaje">🚌 Pasaje</option>
+            <option value="Alquiler">🏠 Alquiler</option>
+            <option value="Otros">📦 Otros</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Monto *</label><input type="number" id="gastoMonto" step="0.01" min="0.01" placeholder="0.00"></div>
+      </div>
+      <div class="form-group"><label>Fecha</label><input type="date" id="gastoFecha"></div>
+      <input type="hidden" id="gastoEditId" value="">
+      <div style="background:var(--light-2);border-radius:10px;padding:12px;margin-bottom:16px;font-size:0.85rem;color:var(--gray);">
+        💡 Los gastos se descuentan automáticamente del cálculo de <strong>Ganancia Neta</strong> en el dashboard.
+      </div>
+      <button class="btn btn-block btn-lg btn-round" style="background:linear-gradient(135deg,#e17055,#d63031);color:white;font-weight:700;" onclick="saveGasto()">Guardar Gasto</button>
+    </div>
+  </div>
 
   <!-- MODALES -->
 

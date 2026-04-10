@@ -198,6 +198,7 @@ async function loadAllData() {
     loadDiscounts(),
     loadNotifications()
   ]);
+  loadGastos();
   updateDashboard();
   initCharts();
 }
@@ -265,7 +266,8 @@ function showSection(section) {
   const names = {
     dashboard: 'Dashboard', ventas: 'Ventas', productos: 'Productos',
     inventario: 'Inventario', clientes: 'Clientes', reportes: 'Reportes',
-    marketing: 'Marketing', notificaciones: 'Notificaciones', configuracion: 'Configuración'
+    marketing: 'Marketing', notificaciones: 'Notificaciones', configuracion: 'Configuración',
+    gastos: 'Gastos'
   };
   document.getElementById('currentSection').textContent = names[section] || section;
 }
@@ -563,7 +565,7 @@ async function deleteProduct(id) {
   });
 }
 
-function showConfirmModal(title, message, onConfirm) {
+function showConfirmModal(title, message, onConfirm, confirmLabel, confirmIcon) {
   let modal = document.getElementById('appConfirmModal');
   if (!modal) {
     modal = document.createElement('div');
@@ -571,6 +573,8 @@ function showConfirmModal(title, message, onConfirm) {
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;';
     document.body.appendChild(modal);
   }
+  const label = confirmLabel || 'Eliminar';
+  const icon = confirmIcon || '🗑️';
   modal.innerHTML = `
     <div style="background:var(--white);border-radius:20px;padding:28px;max-width:360px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);text-align:center;">
       <div style="font-size:2rem;margin-bottom:12px;">⚠️</div>
@@ -578,7 +582,7 @@ function showConfirmModal(title, message, onConfirm) {
       <p style="color:var(--gray);font-size:0.9rem;margin-bottom:24px;">${message}</p>
       <div style="display:flex;gap:10px;">
         <button id="appConfirmCancel" style="flex:1;padding:13px;border-radius:10px;border:1.5px solid var(--light);background:var(--white);font-weight:600;cursor:pointer;font-size:0.95rem;">Cancelar</button>
-        <button id="appConfirmOk" style="flex:1;padding:13px;border-radius:10px;border:none;background:#e74c3c;color:white;font-weight:700;cursor:pointer;font-size:0.95rem;">🗑️ Eliminar</button>
+        <button id="appConfirmOk" style="flex:1;padding:13px;border-radius:10px;border:none;background:#e74c3c;color:white;font-weight:700;cursor:pointer;font-size:0.95rem;">${icon} ${label}</button>
       </div>
     </div>
   `;
@@ -1071,25 +1075,37 @@ async function markNotifRead(id) {
 // ============================================
 
 function updateDashboard() {
-  userRef.child('ventas').once('value', (snap) => {
-    const ventas = snap.val() || {};
-    const today = new Date().toISOString().split('T')[0];
-    const thisMonth = new Date().toISOString().slice(0, 7);
+  const today = new Date().toISOString().split('T')[0];
+  const thisMonth = new Date().toISOString().slice(0, 7);
 
-    let ventasDia = 0, ingresosMes = 0, gastosMes = 0;
-
+  // Ventas
+  userRef.child('ventas').once('value', (snapV) => {
+    const ventas = snapV.val() || {};
+    let ventasDia = 0, ingresosMes = 0;
     Object.values(ventas).forEach(v => {
       if (v.fecha && v.fecha.startsWith(today)) ventasDia += v.total || 0;
-      if (v.fecha && v.fecha.startsWith(thisMonth)) {
-        ingresosMes += v.total || 0;
-        gastosMes += (v.total || 0) - (v.ganancia || 0);
-      }
+      if (v.fecha && v.fecha.startsWith(thisMonth)) ingresosMes += v.total || 0;
     });
 
-    document.getElementById('ventasDia').textContent = '$' + ventasDia.toFixed(2);
-    document.getElementById('ingresosMes').textContent = '$' + ingresosMes.toFixed(2);
-    document.getElementById('gastosMes').textContent = '$' + gastosMes.toFixed(2);
-    document.getElementById('gananciaNeta').textContent = '$' + (ingresosMes - gastosMes).toFixed(2);
+    // Gastos reales
+    userRef.child('gastos').once('value', (snapG) => {
+      const gastos = snapG.val() || {};
+      let gastosMes = 0;
+      Object.values(gastos).forEach(g => {
+        if (g.fecha && g.fecha.startsWith(thisMonth)) gastosMes += g.monto || 0;
+      });
+
+      const gananciaNeta = ingresosMes - gastosMes;
+
+      document.getElementById('ventasDia').textContent = '$' + ventasDia.toFixed(2);
+      document.getElementById('ingresosMes').textContent = '$' + ingresosMes.toFixed(2);
+      document.getElementById('gastosMes').textContent = '$' + gastosMes.toFixed(2);
+      document.getElementById('gananciaNeta').textContent = '$' + gananciaNeta.toFixed(2);
+
+      // Color ganancia
+      const gananciaEl = document.getElementById('gananciaNeta');
+      if (gananciaEl) gananciaEl.style.color = gananciaNeta >= 0 ? 'var(--success)' : 'var(--danger)';
+    });
   });
 }
 
@@ -1282,7 +1298,7 @@ function handleLogout() {
     auth.signOut().then(() => {
       window.location.href = 'login.html';
     });
-  });
+  }, 'Cerrar Sesión', '🔓');
 }
 
 function handleSearch(value) {
@@ -1325,8 +1341,114 @@ document.addEventListener('click', (e) => {
 });
 
 // ============================================
-// FUNCIÓN PARA AGREGAR IMAGEN POR LINK/URL
+// GASTOS - Registro y gestión de gastos
 // ============================================
+
+const TIPOS_GASTO = ['Venta', 'Servicios', 'Pasaje', 'Alquiler', 'Otros'];
+
+function openGastoModal() {
+  // Reset form
+  document.getElementById('gastoEditId').value = '';
+  document.getElementById('gastoDescripcion').value = '';
+  document.getElementById('gastoMonto').value = '';
+  document.getElementById('gastoTipo').value = 'Venta';
+  document.getElementById('gastoFecha').value = new Date().toISOString().split('T')[0];
+  openModal('gastoModal');
+}
+
+async function saveGasto() {
+  const editId = document.getElementById('gastoEditId').value;
+  const descripcion = document.getElementById('gastoDescripcion').value.trim();
+  const monto = parseFloat(document.getElementById('gastoMonto').value) || 0;
+  const tipo = document.getElementById('gastoTipo').value;
+  const fecha = document.getElementById('gastoFecha').value;
+
+  if (!descripcion) { showToast('La descripción es requerida', 'warning'); return; }
+  if (monto <= 0) { showToast('El monto debe ser mayor a 0', 'warning'); return; }
+
+  const gasto = { descripcion, monto, tipo, fecha: fecha || new Date().toISOString().split('T')[0], fechaISO: new Date().toISOString() };
+
+  try {
+    if (editId) {
+      await userRef.child('gastos/' + editId).update(gasto);
+    } else {
+      await userRef.child('gastos').push(gasto);
+    }
+    showToast('Gasto guardado ✅', 'success');
+    closeModal('gastoModal');
+  } catch (e) {
+    showToast('Error al guardar gasto', 'error');
+  }
+}
+
+async function deleteGasto(id) {
+  showConfirmModal('¿Eliminar este gasto?', 'Esta acción no se puede deshacer.', async () => {
+    await userRef.child('gastos/' + id).remove();
+    showToast('Gasto eliminado', 'success');
+  });
+}
+
+function editGasto(id) {
+  userRef.child('gastos/' + id).once('value').then(snap => {
+    const g = snap.val();
+    if (!g) return;
+    document.getElementById('gastoEditId').value = id;
+    document.getElementById('gastoDescripcion').value = g.descripcion || '';
+    document.getElementById('gastoMonto').value = g.monto || '';
+    document.getElementById('gastoTipo').value = g.tipo || 'Venta';
+    document.getElementById('gastoFecha').value = g.fecha || '';
+    openModal('gastoModal');
+  });
+}
+
+function loadGastos() {
+  userRef.child('gastos').on('value', (snap) => {
+    renderGastos(snap.val() || {});
+    updateDashboard(); // recalculate with real gastos
+  });
+}
+
+function renderGastos(gastos) {
+  const tbody = document.getElementById('gastosTableBody');
+  if (!tbody) return;
+  const entries = Object.entries(gastos).sort((a, b) => (b[1].fecha || '').localeCompare(a[1].fecha || ''));
+  const totalEl = document.getElementById('gastosTotalMes');
+
+  // Sum gastos this month
+  const thisMonth = new Date().toISOString().slice(0, 7);
+  let totalMes = 0;
+  entries.forEach(([, g]) => { if (g.fecha && g.fecha.startsWith(thisMonth)) totalMes += g.monto || 0; });
+  if (totalEl) totalEl.textContent = '$' + totalMes.toFixed(2);
+
+  // Stats by type
+  TIPOS_GASTO.forEach(tipo => {
+    const el = document.getElementById('gastoStat_' + tipo);
+    if (el) {
+      const sum = entries.filter(([, g]) => g.tipo === tipo && g.fecha && g.fecha.startsWith(thisMonth))
+        .reduce((acc, [, g]) => acc + (g.monto || 0), 0);
+      el.textContent = '$' + sum.toFixed(2);
+    }
+  });
+
+  if (entries.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray" style="padding:40px;">No hay gastos registrados</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = entries.slice(0, 50).map(([id, g]) => `
+    <tr>
+      <td>${g.fecha || '-'}</td>
+      <td style="font-weight:600;">${g.descripcion}</td>
+      <td><span style="padding:4px 10px;border-radius:20px;font-size:0.8rem;font-weight:600;background:rgba(108,92,231,0.1);color:var(--primary);">${g.tipo || 'Otros'}</span></td>
+      <td style="font-weight:700;color:var(--danger);">$${(g.monto || 0).toFixed(2)}</td>
+      <td>
+        <button class="btn btn-sm" style="background:var(--light);color:var(--dark);" onclick="editGasto('${id}')">✏️</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteGasto('${id}')">🗑️</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
 function addMediaByLink() {
   const url = document.getElementById('mediaLinkUrl').value.trim();
   if (!url) { showToast('Ingresa una URL válida', 'warning'); return; }
