@@ -24,8 +24,14 @@ const googleProvider = new firebase.auth.GoogleAuthProvider();
 
 async function verificarAdmin(uid, email) {
   try {
+    // Primero buscar por UID (doc ID)
     const doc = await firestore.collection("privado").doc(uid).get();
     if (doc.exists && doc.data().email === email) {
+      return true;
+    }
+    // Fallback: buscar por campo email en la colección privado
+    const query = await firestore.collection("privado").where("email", "==", email).limit(1).get();
+    if (!query.empty) {
       return true;
     }
     return false;
