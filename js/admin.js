@@ -7,6 +7,46 @@
  */
 
 // ============================================
+// BOTÓN PARA OCULTAR/MOSTRAR EL ADMIN PANEL
+// ============================================
+document.addEventListener('DOMContentLoaded', function () {
+  const hideBtn = document.createElement('button');
+  hideBtn.id = 'btnOcultarAdmin';
+  hideBtn.title = 'Ocultar Panel Admin';
+  hideBtn.innerHTML = '✕ Ocultar Panel';
+  hideBtn.style.cssText = [
+    'position:fixed',
+    'top:14px',
+    'right:14px',
+    'z-index:99999',
+    'background:#e74c3c',
+    'color:#fff',
+    'border:none',
+    'border-radius:10px',
+    'padding:9px 18px',
+    'font-size:0.88rem',
+    'font-weight:700',
+    'cursor:pointer',
+    'box-shadow:0 4px 16px rgba(0,0,0,0.18)',
+    'letter-spacing:0.5px',
+    'transition:opacity 0.2s'
+  ].join(';');
+
+  hideBtn.addEventListener('mouseenter', function () { this.style.opacity = '0.85'; });
+  hideBtn.addEventListener('mouseleave', function () { this.style.opacity = '1'; });
+
+  hideBtn.addEventListener('click', function () {
+    const panel = document.getElementById('adminPanelSection');
+    const login = document.getElementById('adminLoginSection');
+    if (panel) panel.classList.add('hidden');
+    if (login) login.classList.add('hidden');
+    hideBtn.style.display = 'none';
+  });
+
+  document.body.appendChild(hideBtn);
+});
+
+// ============================================
 // ADMIN GOOGLE LOGIN
 // ============================================
 async function handleAdminGoogleLogin() {
@@ -425,7 +465,6 @@ async function savePlan(key) {
   };
   await db.ref('planesConfig/' + key).set(plan);
 
-  // Actualizar en tiempo real los límites de todos los usuarios con ese plan
   const usersSnap = await db.ref('usuarios').once('value');
   const users = usersSnap.val() || {};
   const updates = {};
