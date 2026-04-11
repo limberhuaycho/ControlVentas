@@ -111,7 +111,10 @@ function showAdminSection(section) {
   const target = document.getElementById('admin-' + section);
   if (target) { target.classList.remove('hidden'); target.classList.add('animate-fadeIn'); }
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-  event.currentTarget?.classList.add('active');
+  if (event && event.currentTarget) event.currentTarget.classList.add('active');
+  // Cerrar sidebar en móvil (como app.js) sin ocultar el panel completo
+  const sidebar = document.getElementById('sidebar');
+  if (sidebar) sidebar.classList.remove('mobile-open');
 }
 
 function showToast(msg, type = 'success') {
