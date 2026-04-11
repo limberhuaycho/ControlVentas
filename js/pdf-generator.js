@@ -1,48 +1,90 @@
-/**
+  /**
  * ============================================
  * PDF-GENERATOR.JS - Generación de Extractos PDF
  * ============================================
  * Genera extractos en PDF o imagen usando jsPDF.
  * Límites configurables por plan desde admin.
- * 
+ *
  * LÍMITES POR DEFECTO (plan gratuito):
  * - 1 extracto por día
  * - 2 extractos por mes
- * 
+ *
  * Los planes de pago tienen límites configurables desde admin.
+ *
+ * CONTADORES REALES EN BASE DE DATOS:
+ * /usuarios/{uid}/perfil/limiteActualDia  → cuántos extractos generó hoy
+ * /usuarios/{uid}/perfil/limiteActualMes  → cuántos extractos generó este mes
+ * /usuarios/{uid}/perfil/fechaUltimoDia   → fecha YYYY-MM-DD del último reset diario
+ * /usuarios/{uid}/perfil/fechaUltimoMes   → mes YYYY-MM del último reset mensual
  * ============================================
  */
 
 /**
+ * resetExtractoCountersIfNeeded
+ * Verifica y resetea los contadores reales si cambió el día o el mes.
+ * Actualiza en base de datos y en userProfile local.
+ */
+async function resetExtractoCountersIfNeeded() {
+  if (!currentUser || !userRef) return;
+
+  const today = new Date().toISOString().split('T')[0];
+  const currentMonth = new Date().toISOString().slice(0, 7);
+
+  const updates = {};
+
+  if ((userProfile?.fechaUltimoDia || '') !== today) {
+    updates['limiteActualDia'] = 0;
+    updates['fechaUltimoDia'] = today;
+    if (userProfile) {
+      userProfile.limiteActualDia = 0;
+      userProfile.fechaUltimoDia = today;
+    }
+  }
+
+  if ((userProfile?.fechaUltimoMes || '') !== currentMonth) {
+    updates['limiteActualMes'] = 0;
+    updates['fechaUltimoMes'] = currentMonth;
+    if (userProfile) {
+      userProfile.limiteActualMes = 0;
+      userProfile.fechaUltimoMes = currentMonth;
+    }
+  }
+
+  if (Object.keys(updates).length > 0) {
+    await userRef.child('perfil').update(updates);
+  }
+}
+
+/**
  * checkExtractoLimits - Verifica si el usuario puede generar más extractos
+ * Usa contadores reales de la base de datos (limiteActualDia / limiteActualMes)
  * @returns {Promise<{canGenerate: boolean, message: string}>}
  */
 async function checkExtractoLimits() {
   if (!currentUser || !userRef) return { canGenerate: false, message: 'Debes iniciar sesión' };
 
-  const today = new Date().toISOString().split('T')[0];
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  await resetExtractoCountersIfNeeded();
 
-  const snap = await userRef.child('extractos').once('value');
-  const extractos = snap.val() || {};
+  const snap = await userRef.child('perfil').once('value');
+  const perfil = snap.val() || {};
 
-  let hoy = 0, mes = 0;
-  Object.values(extractos).forEach(e => {
-    if (e.fecha && e.fecha.startsWith(today)) hoy++;
-    if (e.fecha && e.fecha.startsWith(currentMonth)) mes++;
-  });
+  const usadoHoy = perfil.limiteActualDia || 0;
+  const usadoMes = perfil.limiteActualMes || 0;
 
-  const limiteDia = userProfile?.limiteExtractosDia || 1;
-  const limiteMes = userProfile?.limiteExtractosMes || 2;
+  const limiteDia = perfil.limiteExtractosDia || 1;
+  const limiteMes = perfil.limiteExtractosMes || 2;
 
-  if (hoy >= limiteDia) {
+  if (usadoHoy >= limiteDia) {
     return { canGenerate: false, message: `Límite diario alcanzado (${limiteDia}). Mejora tu plan para más.` };
   }
-  if (mes >= limiteMes) {
+  if (usadoMes >= limiteMes) {
     return { canGenerate: false, message: `Límite mensual alcanzado (${limiteMes}). Mejora tu plan para más.` };
   }
 
-  return { canGenerate: true, message: `Puedes generar ${limiteDia - hoy} más hoy y ${limiteMes - mes} más este mes.` };
+  return {
+    canGenerate: true,
+    message: `Puedes generar ${limiteDia - usadoHoy} más hoy y ${limiteMes - usadoMes} más este mes.`
+  };
 }
 
 /**
@@ -65,19 +107,14 @@ async function generateExtracto(format = 'pdf') {
   const fechaStr = fecha.toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
   const fechaFile = fecha.toISOString().split('T')[0];
 
-  // Obtener datos de ventas del mes actual
   const currentMonth = fecha.toISOString().slice(0, 7);
   const ventasSnap = await userRef.child('ventas').once('value');
   const ventasData = ventasSnap.val() || {};
   const ventasMes = Object.values(ventasData).filter(v => v.fecha && v.fecha.startsWith(currentMonth));
 
   let totalIngresos = 0;
+  ventasMes.forEach(v => { totalIngresos += v.total || 0; });
 
-  ventasMes.forEach(v => {
-  totalIngresos += v.total || 0;
-  });
-
-// ✅ NUEVO: Obtener gastos reales
   const gastosSnap = await userRef.child('gastos').once('value');
   const gastosData = gastosSnap.val() || {};
 
@@ -88,10 +125,8 @@ async function generateExtracto(format = 'pdf') {
     }
   });
 
-  // ✅ NUEVO: Ganancia REAL
   const totalGanancias = totalIngresos - totalGastos;
 
-  // Obtener productos
   const prodSnap = await userRef.child('productos').once('value');
   const productos = prodSnap.val() || {};
   const totalProductos = Object.keys(productos).length;
@@ -100,7 +135,6 @@ async function generateExtracto(format = 'pdf') {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
 
-    // Header
     doc.setFillColor(108, 92, 231);
     doc.rect(0, 0, 210, 45, 'F');
     doc.setTextColor(255, 255, 255);
@@ -113,7 +147,6 @@ async function generateExtracto(format = 'pdf') {
     doc.setFontSize(10);
     doc.text(fechaStr, 105, 36, { align: 'center' });
 
-    // Info del negocio
     doc.setTextColor(45, 52, 54);
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
@@ -123,12 +156,10 @@ async function generateExtracto(format = 'pdf') {
     doc.text('Propietario: ' + nombre, 20, 68);
     doc.text('Fecha de generación: ' + fechaStr, 20, 75);
 
-    // Línea separadora
     doc.setDrawColor(108, 92, 231);
     doc.setLineWidth(0.5);
     doc.line(20, 80, 190, 80);
 
-    // Resumen
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.text('Resumen del Mes', 20, 92);
@@ -152,7 +183,6 @@ async function generateExtracto(format = 'pdf') {
       doc.text(item[1], 90, y);
     });
 
-    // Detalle de ventas recientes
     const detalleY = resumenY + items.length * 10 + 15;
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
@@ -179,7 +209,6 @@ async function generateExtracto(format = 'pdf') {
       doc.text('$' + (v.total || 0).toFixed(2), 155, y);
     });
 
-    // Footer
     doc.setFillColor(45, 52, 54);
     doc.rect(0, 280, 210, 17, 'F');
     doc.setTextColor(178, 190, 195);
@@ -191,23 +220,22 @@ async function generateExtracto(format = 'pdf') {
     if (format === 'pdf') {
       doc.save(fileName + '.pdf');
     } else {
-      // Generar como imagen
-      const canvas = document.createElement('canvas');
-      const imgData = doc.output('datauristring');
-      // Para imagen, usar html2canvas del PDF
-      const pdfBlob = doc.output('blob');
-      const url = URL.createObjectURL(pdfBlob);
-      // Descarga como PDF por compatibilidad, el usuario puede capturar pantalla
       doc.save(fileName + '.pdf');
       showToast('Para imagen: usa captura de pantalla del PDF', 'info');
     }
 
-    // Registrar extracto generado
-    await userRef.child('extractos').push({
-      fecha: new Date().toISOString(),
-      tipo: format,
-      nombre: fileName
+    const nuevoUsadoHoy = (userProfile?.limiteActualDia || 0) + 1;
+    const nuevoUsadoMes = (userProfile?.limiteActualMes || 0) + 1;
+
+    await userRef.child('perfil').update({
+      limiteActualDia: nuevoUsadoHoy,
+      limiteActualMes: nuevoUsadoMes
     });
+
+    if (userProfile) {
+      userProfile.limiteActualDia = nuevoUsadoHoy;
+      userProfile.limiteActualMes = nuevoUsadoMes;
+    }
 
     showToast('¡Extracto generado! 📄', 'success');
 
